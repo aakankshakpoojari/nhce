@@ -1,0 +1,29 @@
+node_modules
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+.next/
+out/
+
+# IDE / tooling
+.vscode/
+.idea/
+
+# Agent/tool-specific files
+.agents/
+.claude/
+.windsurf/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
