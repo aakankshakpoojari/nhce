@@ -27,99 +27,99 @@ export default function CreateEscrowPage() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent text-[#F5F5F4] flex flex-col selection:bg-[#84CC16] selection:text-[#101312]">
+    <div className="min-h-screen bg-transparent text-foreground flex flex-col selection:bg-moss selection:text-background">
       
       {/* Header */}
-      <header className="sticky top-0 z-40 px-6 py-3.5 border-b border-[#28332D] bg-[#181D1A]/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 px-6 py-3.5 border-b border-surface-border bg-surface/95 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/client" className="flex items-center gap-2 text-xs text-[#A3A3A3] hover:text-[#F5F5F4]">
+          <Link href="/client" className="flex items-center gap-2 text-xs text-muted hover:text-foreground">
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Client Dashboard</span>
           </Link>
-          <span className="text-xs font-mono text-[#84CC16]">DEPLOY NEW SMART ESCROW</span>
+          <span className="text-xs font-mono text-moss">DEPLOY NEW SMART ESCROW</span>
         </div>
       </header>
 
       {/* Form Container */}
       <main className="flex-1 max-w-2xl w-full mx-auto px-6 py-10">
-        <div className="bg-[#181D1A] border border-[#28332D] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+        <div className="bg-surface border border-surface-border rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#101312] border border-[#28332D] text-[#84CC16] text-xs font-mono mb-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background border border-surface-border text-moss text-xs font-mono mb-1">
               <Lock className="w-3.5 h-3.5" /> Multisig Milestone Vault
             </div>
-            <h1 className="text-2xl font-extrabold text-[#F5F5F4]">Create Smart Contract Escrow</h1>
-            <p className="text-xs text-[#A3A3A3]">
+            <h1 className="text-2xl font-extrabold text-foreground">Create Smart Contract Escrow</h1>
+            <p className="text-xs text-muted">
               Funds will be locked directly into an audited smart contract on Ethereum or Arbitrum.
             </p>
           </div>
 
           <form onSubmit={handleDeployEscrow} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#F5F5F4]">Project / Work Title</label>
+              <label className="text-xs font-semibold text-foreground">Project / Work Title</label>
               <input
                 type="text"
                 required
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
                 placeholder="e.g. Smart Contract Security Audit"
-                className="w-full px-4 py-3 rounded-xl bg-[#101312] border border-[#28332D] focus:border-[#84CC16] text-sm text-[#F5F5F4] focus:outline-none"
+                className="w-full px-4 py-3 rounded-xl bg-background border border-surface-border focus:border-moss text-sm text-foreground focus:outline-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#F5F5F4]">Freelancer Wallet Address</label>
+              <label className="text-xs font-semibold text-foreground">Freelancer Wallet Address</label>
               <input
                 type="text"
                 required
                 value={freelancerAddress}
                 onChange={(e) => setFreelancerAddress(e.target.value)}
                 placeholder="0x..."
-                className="w-full px-4 py-3 rounded-xl bg-[#101312] border border-[#28332D] focus:border-[#84CC16] text-xs font-mono text-[#F5F5F4] focus:outline-none"
+                className="w-full px-4 py-3 rounded-xl bg-background border border-surface-border focus:border-moss text-xs font-mono text-foreground focus:outline-none"
               />
             </div>
 
             {/* Dual Currency Amount */}
-            <div className="p-4 rounded-2xl bg-[#101312] border border-[#28332D] space-y-3">
-              <span className="text-xs font-semibold text-[#F5F5F4] block">Escrow Amount (Dual Currency)</span>
+            <div className="p-4 rounded-2xl bg-background border border-surface-border space-y-3">
+              <span className="text-xs font-semibold text-foreground block">Escrow Amount (Dual Currency)</span>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-[11px] text-[#A3A3A3] font-mono">Amount (USD)</span>
+                  <span className="text-[11px] text-muted font-mono">Amount (USD)</span>
                   <input
                     type="number"
                     min={50}
                     value={amountUSD}
                     onChange={(e) => setAmountUSD(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-[#181D1A] border border-[#28332D] text-sm font-mono font-bold text-[#F5F5F4]"
+                    className="w-full px-3 py-2 rounded-xl bg-surface border border-surface-border text-sm font-mono font-bold text-foreground"
                   />
                 </div>
                 <div>
-                  <span className="text-[11px] text-[#A3A3A3] font-mono">Equivalent (INR)</span>
+                  <span className="text-[11px] text-muted font-mono">Equivalent (INR)</span>
                   <input
                     type="text"
                     readOnly
                     value={`₹${amountINR.toLocaleString("en-IN")}`}
-                    className="w-full px-3 py-2 rounded-xl bg-[#181D1A] border border-[#28332D] text-sm font-mono font-bold text-[#22C55E]"
+                    className="w-full px-3 py-2 rounded-xl bg-surface border border-surface-border text-sm font-mono font-bold text-[#22C55E]"
                   />
                 </div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#F5F5F4]">Milestone Deliverable Criteria</label>
+              <label className="text-xs font-semibold text-foreground">Milestone Deliverable Criteria</label>
               <textarea
                 rows={3}
                 required
                 value={milestoneDesc}
                 onChange={(e) => setMilestoneDesc(e.target.value)}
                 placeholder="Describe what deliverables are required before escrow release..."
-                className="w-full px-4 py-3 rounded-xl bg-[#101312] border border-[#28332D] focus:border-[#84CC16] text-xs text-[#F5F5F4] focus:outline-none resize-none"
+                className="w-full px-4 py-3 rounded-xl bg-background border border-surface-border focus:border-moss text-xs text-foreground focus:outline-none resize-none"
               />
             </div>
 
             <button
               type="submit"
               disabled={isDeploying}
-              className="w-full py-3.5 px-4 rounded-xl font-bold bg-[#84CC16] hover:bg-[#BEF264] text-[#101312] text-xs uppercase tracking-wider transition shadow-lg shadow-[#84CC16]/20 flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 rounded-xl font-bold bg-moss hover:bg-[#BEF264] text-background text-xs uppercase tracking-wider transition shadow-lg shadow-[#84CC16]/20 flex items-center justify-center gap-2"
             >
               {isDeploying ? (
                 <span>Locking Escrow on Blockchain...</span>

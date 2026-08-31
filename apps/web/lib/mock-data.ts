@@ -497,3 +497,267 @@ export const freelancerStats = {
   ] as MockReview[]
 };
 
+export interface MockMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: string;
+  isRead: boolean;
+}
+
+export interface MockConversation {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientAvatar: string;
+  projectTitle: string;
+  lastMessage: string;
+  lastMessageTime: string;
+  unreadCount: number;
+  messages: MockMessage[];
+}
+
+export const conversations: MockConversation[] = [
+  {
+    id: "conv1",
+    clientId: "c1",
+    clientName: "Layer2DAO",
+    clientAvatar: "L",
+    projectTitle: "ZK-Rollup Bridge Interface",
+    lastMessage: "Could you clarify the milestone schedule?",
+    lastMessageTime: "10:30 AM",
+    unreadCount: 2,
+    messages: [
+      {
+        id: "m1",
+        senderId: "c1",
+        senderName: "Layer2DAO",
+        text: "Hi there! We loved your proposal for the ZK-Rollup Bridge.",
+        timestamp: "Yesterday, 4:00 PM",
+        isRead: true,
+      },
+      {
+        id: "m2",
+        senderId: "me",
+        senderName: "Me",
+        text: "Thanks! I'm really excited about the architecture you guys are using.",
+        timestamp: "Yesterday, 4:15 PM",
+        isRead: true,
+      },
+      {
+        id: "m3",
+        senderId: "c1",
+        senderName: "Layer2DAO",
+        text: "Before we lock the escrow, could you clarify the milestone schedule? Specifically for the second phase.",
+        timestamp: "10:30 AM",
+        isRead: false,
+      }
+    ]
+  },
+  {
+    id: "conv2",
+    clientId: "c2",
+    clientName: "MEV Labs",
+    clientAvatar: "M",
+    projectTitle: "Solana MEV Bot Optimization",
+    lastMessage: "The transaction speeds look great on devnet.",
+    lastMessageTime: "Yesterday",
+    unreadCount: 0,
+    messages: [
+      {
+        id: "m4",
+        senderId: "c2",
+        senderName: "MEV Labs",
+        text: "The transaction speeds look great on devnet. Are we ready for mainnet?",
+        timestamp: "Yesterday, 2:00 PM",
+        isRead: true,
+      },
+      {
+        id: "m5",
+        senderId: "me",
+        senderName: "Me",
+        text: "Yes, I'm just running the final Jito bundle tests now.",
+        timestamp: "Yesterday, 2:30 PM",
+        isRead: true,
+      }
+    ]
+  },
+  {
+    id: "conv3",
+    clientId: "c3",
+    clientName: "ArtBlocks",
+    clientAvatar: "A",
+    projectTitle: "Design System for NFT Marketplace",
+    lastMessage: "I've attached the brand guidelines.",
+    lastMessageTime: "2 days ago",
+    unreadCount: 0,
+    messages: [
+      {
+        id: "m6",
+        senderId: "c3",
+        senderName: "ArtBlocks",
+        text: "Looking forward to working with you. I've attached the brand guidelines.",
+        timestamp: "2 days ago",
+        isRead: true,
+      }
+    ]
+  }
+];
+
+export interface DetailedClientProfile {
+  id: string;
+  name: string;
+  handle: string;
+  avatar: string;
+  rating: number;
+  totalBounties: number;
+  totalSpent: string;
+  memberSince: string;
+  bio: string;
+  reviews: MockReview[];
+}
+
+export const detailedClients: Record<string, DetailedClientProfile> = {
+  "layer2dao": {
+    id: "c1",
+    name: "Layer2DAO",
+    handle: "layer2dao",
+    avatar: "L",
+    rating: 4.8,
+    totalBounties: 12,
+    totalSpent: "$145,000",
+    memberSince: "Jan 2022",
+    bio: "We build open-source infrastructure for ZK-Rollups and Ethereum scaling solutions. Looking for high-quality Web3 talent to accelerate our roadmap.",
+    reviews: [
+      {
+        id: "r1",
+        author: "Alex K.",
+        rating: 5,
+        comment: "Great client! Very clear requirements and they escrowed the funds immediately.",
+        date: "1 month ago"
+      },
+      {
+        id: "r2",
+        author: "Sarah M.",
+        rating: 4,
+        comment: "Good communication, though the project scope expanded slightly midway. Still a pleasant experience.",
+        date: "3 months ago"
+      }
+    ]
+  },
+  "mev_labs": {
+    id: "c2",
+    name: "MEV Labs",
+    handle: "mev_labs",
+    avatar: "M",
+    rating: 4.5,
+    totalBounties: 8,
+    totalSpent: "$210,000",
+    memberSince: "Mar 2023",
+    bio: "Research and engineering firm specializing in Maximum Extractable Value and algorithmic trading on Solana.",
+    reviews: [
+      {
+        id: "r3",
+        author: "Marcus T.",
+        rating: 5,
+        comment: "Extremely technical team. They know what they want and pay top dollar for optimized Rust code.",
+        date: "2 weeks ago"
+      }
+    ]
+  },
+  "artblocks": {
+    id: "c3",
+    name: "ArtBlocks",
+    handle: "artblocks",
+    avatar: "A",
+    rating: 4.9,
+    totalBounties: 24,
+    totalSpent: "$50,000",
+    memberSince: "Jul 2021",
+    bio: "Curated generative art platform. We frequently hire designers and frontend devs to build bespoke gallery experiences.",
+    reviews: [
+      {
+        id: "r4",
+        author: "Elena R.",
+        rating: 5,
+        comment: "A dream to design for. They value aesthetics and give you creative freedom.",
+        date: "5 months ago"
+      }
+    ]
+  }
+};
+
+export interface MockFreelancer {
+  id: string;
+  name: string;
+  avatar: string;
+  role: string;
+  rating: number;
+  completedJobs: number;
+  isPro: boolean;
+  hourlyUSD: number;
+  hourlyINR: number;
+  skills: string[];
+  bio: string;
+  didVerified: boolean;
+}
+
+export const freelancersList: MockFreelancer[] = [
+  {
+    id: "tal-1",
+    name: "Vikram Sharma",
+    avatar: "VS",
+    role: "Senior Solidity & Security Architect",
+    rating: 4.95,
+    completedJobs: 28,
+    isPro: true,
+    hourlyUSD: 95,
+    hourlyINR: 7900,
+    skills: ["Solidity", "Foundry", "Security Auditing", "Arbitrum", "DeFi"],
+    bio: "Ex-Consensys contributor specializing in EVM smart contract audits, multisig architecture, and zero-knowledge escrow proofs.",
+    didVerified: true,
+  },
+  {
+    id: "tal-2",
+    name: "Elena Rostova",
+    avatar: "ER",
+    role: "Web3 Frontend & UX Specialist",
+    rating: 4.88,
+    completedJobs: 19,
+    isPro: true,
+    hourlyUSD: 75,
+    hourlyINR: 6240,
+    skills: ["Next.js", "TypeScript", "Tailwind CSS", "Wagmi", "Ethers.js"],
+    bio: "Crafting beautiful, high-converting crypto interfaces and dApp experiences with seamless MetaMask and WalletConnect integration.",
+    didVerified: true,
+  },
+  {
+    id: "tal-3",
+    name: "Aakash Patel",
+    avatar: "AP",
+    role: "Rust & Solana Protocol Engineer",
+    rating: 4.92,
+    completedJobs: 22,
+    isPro: true,
+    hourlyUSD: 90,
+    hourlyINR: 7490,
+    skills: ["Rust", "Solana", "Anchor", "Smart Escrow"],
+    bio: "High-performance protocol engineering, decentralized orderbooks, and cross-chain messaging contracts.",
+    didVerified: true,
+  },
+  {
+    id: "tal-4",
+    name: "Samira Khan",
+    avatar: "SK",
+    role: "Junior Smart Contract Developer",
+    rating: 3.9,
+    completedJobs: 4,
+    isPro: false,
+    hourlyUSD: 45,
+    hourlyINR: 3740,
+    skills: ["Solidity", "Hardhat", "React"],
+    bio: "Building test suites, token contracts, and basic NFT staking mechanics.",
+    didVerified: false,
+  },
+];

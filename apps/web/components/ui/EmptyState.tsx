@@ -12,29 +12,25 @@ interface EmptyStateProps {
 
 export default function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="w-full flex flex-col items-center justify-center py-24 px-8 bg-[#181D1A]/50 border border-white/5 rounded-[2.5rem] relative overflow-hidden group">
-      {/* Subtle background noise texture & glow */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#84CC16]/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-[#84CC16]/20 transition-colors duration-1000"></div>
-
-      <div className="relative flex flex-col items-center text-center z-10 max-w-md">
+    <div className="w-full flex flex-col items-center justify-center py-16 px-6 bg-surface border border-surface-border rounded-2xl">
+      <div className="flex flex-col items-center text-center max-w-sm">
         {Icon && (
-          <div className="w-20 h-20 rounded-full bg-[#101312] border border-white/5 flex items-center justify-center mb-8 shadow-xl">
-            <Icon className="h-8 w-8 text-[#A3A3A3]" strokeWidth={1.5} />
+          <div className="w-12 h-12 rounded-full bg-background border border-surface-border flex items-center justify-center mb-6">
+            <Icon className="h-6 w-6 text-muted" strokeWidth={1.5} />
           </div>
         )}
         
-        <h3 className="text-3xl font-bold text-[#F5F5F4] mb-4 tracking-tight">
+        <h3 className="text-xl font-bold text-foreground mb-2 tracking-tight">
           {title}
         </h3>
-        <p className="text-[#A3A3A3] text-lg font-light leading-relaxed mb-8">
+        <p className="text-muted text-sm leading-relaxed mb-6">
           {description}
         </p>
 
         {action && (
           <button 
             onClick={action.onClick}
-            className="px-8 py-3 bg-[#181D1A] border border-white/10 rounded-full text-[#F5F5F4] font-medium hover:text-[#101312] hover:bg-[#84CC16] hover:border-[#84CC16] transition-all duration-500 var(--ease-fluid) shadow-lg interactive"
+            className="px-6 py-2 bg-moss hover:bg-[#65A30D] rounded-md text-background font-bold text-sm transition-colors"
           >
             {action.label}
           </button>

@@ -19,6 +19,7 @@ import {
   Award,
   AlertCircle,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import ClientNavbar from "./components/ClientNavbar";
 import PostProjectModal from "./components/PostProjectModal";
 import UpgradeProModal from "./components/UpgradeProModal";
@@ -57,6 +58,18 @@ export default function ClientDashboardPage() {
     time: string;
     read: boolean;
   }>>([]);
+
+  const topFreelancers = [
+    { name: "Vikram S.", role: "Smart Contract Dev", rating: 4.9 },
+    { name: "Elena R.", role: "Frontend UI/UX", rating: 5.0 },
+    { name: "Alex K.", role: "Solana Expert", rating: 4.8 }
+  ];
+
+  const recentActivity = [
+    { action: "Escrow Released", title: "Defi Protocol Audit", time: "10m ago" },
+    { action: "New Freelancer Joined", title: "Rust/WASM Developer", time: "1h ago" },
+    { action: "Project Completed", title: "NFT Marketplace", time: "3h ago" }
+  ];
 
   // Load persisted projects & check role authentication
   useEffect(() => {
@@ -237,7 +250,7 @@ export default function ClientDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent text-[#F5F5F4] flex flex-col selection:bg-[#84CC16] selection:text-[#101312]">
+    <div className="min-h-screen bg-transparent text-foreground flex flex-col selection:bg-moss selection:text-background">
       
       {/* Top Client Navbar */}
       <ClientNavbar
@@ -273,26 +286,26 @@ export default function ClientDashboardPage() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           
           {/* Credit Status Card */}
-          <div className="p-6 rounded-2xl bg-[#181D1A] border border-[#28332D] flex flex-col justify-between">
+          <div className="p-6 rounded-2xl bg-surface border border-surface-border flex flex-col justify-between">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-[#A3A3A3] uppercase">Monthly Free Allowance</span>
-                <span className="w-2 h-2 rounded-full bg-[#84CC16]" />
+                <span className="text-xs font-mono text-muted uppercase">Monthly Free Allowance</span>
+                <span className="w-2 h-2 rounded-full bg-moss" />
               </div>
-              <div className="text-2xl font-black text-[#F5F5F4] font-mono">
+              <div className="text-2xl font-black text-foreground font-mono">
                 {isPro ? (
-                  <span className="text-[#84CC16]">PRO UNLIMITED</span>
+                  <span className="text-moss">PRO UNLIMITED</span>
                 ) : (
-                  <span>{creditsRemaining} / 3 <span className="text-xs text-[#A3A3A3] font-normal">Credits Left</span></span>
+                  <span>{creditsRemaining} / 3 <span className="text-xs text-muted font-normal">Credits Left</span></span>
                 )}
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-[#28332D] text-xs text-[#A3A3A3] flex justify-between items-center">
+            <div className="mt-4 pt-3 border-t border-surface-border text-xs text-muted flex justify-between items-center">
               <span>{isPro ? "Unlimited Postings" : "Free Plan (3 free posts/month)"}</span>
               {!isPro && (
                 <button
                   onClick={() => setIsProModalOpen(true)}
-                  className="text-[#84CC16] font-bold hover:underline"
+                  className="text-moss font-bold hover:underline"
                 >
                   Buy Pro →
                 </button>
@@ -301,31 +314,31 @@ export default function ClientDashboardPage() {
           </div>
 
           {/* Active Escrow TVL */}
-          <div className="p-6 rounded-2xl bg-[#181D1A] border border-[#28332D] flex flex-col justify-between">
+          <div className="p-6 rounded-2xl bg-surface border border-surface-border flex flex-col justify-between">
             <div className="space-y-1">
-              <span className="text-xs font-mono text-[#A3A3A3] uppercase">Locked Escrow Vaults</span>
-              <div className="text-2xl font-black text-[#F5F5F4] font-mono">
+              <span className="text-xs font-mono text-muted uppercase">Locked Escrow Vaults</span>
+              <div className="text-2xl font-black text-foreground font-mono">
                 ${escrows.reduce((acc, curr) => acc + (curr.status !== "released" ? curr.amountUSD : 0), 0).toLocaleString()}
                 <span className="text-xs text-[#22C55E] ml-2 font-normal font-sans">USDC</span>
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-[#28332D] text-xs text-[#A3A3A3] flex justify-between">
+            <div className="mt-4 pt-3 border-t border-surface-border text-xs text-muted flex justify-between">
               <span>{escrows.filter((e) => e.status !== "released").length} Active Milestones</span>
               <span className="text-[#22C55E]">100% Non-Custodial</span>
             </div>
           </div>
 
           {/* Quick Post Action Box */}
-          <div className="p-6 rounded-2xl bg-[#181D1A] border border-[#28332D] flex flex-col justify-between">
+          <div className="p-6 rounded-2xl bg-surface border border-surface-border flex flex-col justify-between">
             <div className="space-y-1">
-              <span className="text-xs font-mono text-[#84CC16] uppercase">Instant Milestone Hiring</span>
-              <div className="text-lg font-bold text-[#F5F5F4]">
+              <span className="text-xs font-mono text-moss uppercase">Instant Milestone Hiring</span>
+              <div className="text-lg font-bold text-foreground">
                 Post a Project & Hire
               </div>
             </div>
             <button
               onClick={() => setIsPostModalOpen(true)}
-              className="mt-4 py-2.5 px-4 rounded-xl bg-[#84CC16] hover:bg-[#BEF264] text-[#101312] font-semibold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-md shadow-[#84CC16]/20"
+              className="mt-4 py-2.5 px-4 rounded-xl bg-moss hover:bg-[#BEF264] text-background font-semibold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-md shadow-[#84CC16]/20"
             >
               <Plus className="w-4 h-4" />
               <span>Post New Work (USD & INR)</span>
@@ -334,14 +347,19 @@ export default function ClientDashboardPage() {
 
         </section>
 
-        {/* Section: Posted Works */}
-        <section className="space-y-4">
+        {/* Layout Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 pt-4">
+          
+          {/* Main Feed */}
+          <div className="lg:col-span-3 space-y-12">
+            {/* Section: Posted Works */}
+            <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-extrabold text-[#F5F5F4] tracking-tight">
+              <h2 className="text-xl font-extrabold text-foreground tracking-tight">
                 Your Posted Projects
               </h2>
-              <p className="text-xs text-[#A3A3A3]">
+              <p className="text-xs text-muted">
                 Review applications, filter talent by skills and ratings, and initiate smart contract escrows.
               </p>
             </div>
@@ -350,19 +368,19 @@ export default function ClientDashboardPage() {
           <div className="grid grid-cols-1 gap-4">
             {projects.length === 0 ? (
               /* Clean Empty State */
-              <div className="p-12 rounded-2xl bg-[#181D1A] border border-[#28332D] text-center space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-[#101312] border border-[#28332D] flex items-center justify-center mx-auto text-[#84CC16]">
+              <div className="p-12 rounded-2xl bg-surface border border-surface-border text-center space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-background border border-surface-border flex items-center justify-center mx-auto text-moss">
                   <Briefcase className="w-7 h-7" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-[#F5F5F4]">No projects posted yet</h3>
-                  <p className="text-xs text-[#A3A3A3] max-w-sm mx-auto">
-                    You have <span className="text-[#84CC16] font-bold">{creditsRemaining} free credits</span> available this month. Post your first project to receive proposals.
+                  <h3 className="text-base font-bold text-foreground">No projects posted yet</h3>
+                  <p className="text-xs text-muted max-w-sm mx-auto">
+                    You have <span className="text-moss font-bold">{creditsRemaining} free credits</span> available this month. Post your first project to receive proposals.
                   </p>
                 </div>
                 <button
                   onClick={() => setIsPostModalOpen(true)}
-                  className="py-2.5 px-5 rounded-xl bg-[#84CC16] hover:bg-[#BEF264] text-[#101312] font-semibold text-xs transition shadow-md inline-flex items-center gap-1.5"
+                  className="py-2.5 px-5 rounded-xl bg-moss hover:bg-[#BEF264] text-background font-semibold text-xs transition shadow-md inline-flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Post Project for Free</span>
@@ -372,7 +390,7 @@ export default function ClientDashboardPage() {
               projects.map((proj) => (
                 <div
                   key={proj.id}
-                  className="p-6 rounded-2xl bg-[#181D1A] border border-[#28332D] hover:border-[#84CC16]/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
+                  className="p-6 rounded-2xl bg-surface border border-surface-border hover:border-moss/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
                 >
                   {/* Left Info */}
                   <div className="space-y-2 flex-1">
@@ -380,23 +398,23 @@ export default function ClientDashboardPage() {
                       <span
                         className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-semibold ${
                           proj.status === "open"
-                            ? "bg-[#84CC16]/20 text-[#84CC16] border border-[#84CC16]/30"
+                            ? "bg-moss/20 text-moss border border-moss/30"
                             : "bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/30"
                         }`}
                       >
                         {proj.status === "open" ? "Accepting Proposals" : "In Progress (Escrow Locked)"}
                       </span>
-                      <span className="text-[11px] text-[#A3A3A3] font-mono">Posted {proj.createdAt}</span>
+                      <span className="text-[11px] text-muted font-mono">Posted {proj.createdAt}</span>
                     </div>
 
-                    <h3 className="text-base font-bold text-[#F5F5F4]">{proj.title}</h3>
-                    <p className="text-xs text-[#A3A3A3] line-clamp-2">{proj.description}</p>
+                    <h3 className="text-base font-bold text-foreground">{proj.title}</h3>
+                    <p className="text-xs text-muted line-clamp-2">{proj.description}</p>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {proj.skills.map((s, idx) => (
                         <span
                           key={idx}
-                          className="px-2 py-0.5 rounded-md bg-[#101312] border border-[#28332D] text-[11px] font-mono text-[#A3A3A3]"
+                          className="px-2 py-0.5 rounded-md bg-background border border-surface-border text-[11px] font-mono text-muted"
                         >
                           {s}
                         </span>
@@ -405,21 +423,21 @@ export default function ClientDashboardPage() {
                   </div>
 
                   {/* Right: Budget & Applicant CTA */}
-                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-4 border-t md:border-t-0 pt-4 md:pt-0 border-[#28332D]">
+                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-4 border-t md:border-t-0 pt-4 md:pt-0 border-surface-border">
                     <div className="text-left md:text-right">
-                      <div className="text-base font-extrabold text-[#F5F5F4] font-mono">
+                      <div className="text-base font-extrabold text-foreground font-mono">
                         ${proj.budgetUSD}
                       </div>
-                      <div className="text-xs text-[#A3A3A3] font-mono">
+                      <div className="text-xs text-muted font-mono">
                         ₹{proj.budgetINR.toLocaleString("en-IN")}
                       </div>
                     </div>
 
                     <button
                       onClick={() => setActiveProjectForApplicants(proj)}
-                      className="px-4 py-2.5 rounded-xl bg-[#101312] hover:bg-[#84CC16] text-[#F5F5F4] hover:text-[#101312] border border-[#28332D] hover:border-[#84CC16] transition-all text-xs font-semibold flex items-center gap-2 shadow-sm"
+                      className="px-4 py-2.5 rounded-xl bg-background hover:bg-moss text-foreground hover:text-background border border-surface-border hover:border-moss transition-all text-xs font-semibold flex items-center gap-2 shadow-sm"
                     >
-                      <Users className="w-3.5 h-3.5 text-[#84CC16] group-hover:text-[#101312]" />
+                      <Users className="w-3.5 h-3.5 text-moss group-hover:text-background" />
                       <span>
                         {proj.applicants.length}{" "}
                         {proj.applicants.length === 1 ? "Applicant" : "Applicants"}
@@ -435,19 +453,19 @@ export default function ClientDashboardPage() {
 
         {/* Section: Active Smart Contract Escrows */}
         {escrows.length > 0 && (
-          <section className="space-y-4 pt-4 border-t border-[#28332D]">
+          <section className="space-y-4 pt-4 border-t border-surface-border">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-extrabold text-[#F5F5F4] tracking-tight">
+                <h2 className="text-xl font-extrabold text-foreground tracking-tight">
                   Active Escrow Vaults
                 </h2>
-                <p className="text-xs text-[#A3A3A3]">
+                <p className="text-xs text-muted">
                   Funds locked in multisig contracts. Release upon reviewing freelancer milestone deliveries.
                 </p>
               </div>
               <Link
                 href="/client/escrows"
-                className="text-xs text-[#84CC16] hover:underline font-mono"
+                className="text-xs text-moss hover:underline font-mono"
               >
                 View All Escrows →
               </Link>
@@ -464,6 +482,68 @@ export default function ClientDashboardPage() {
             </div>
           </section>
         )}
+        </div>
+
+        {/* Right Sidebar */}
+        <aside className="lg:col-span-1 space-y-6">
+          {/* Top Freelancers */}
+          <div className="bg-surface border border-surface-border rounded-2xl p-6 overflow-hidden flex flex-col h-[250px]">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider font-mono mb-4 shrink-0">Top Freelancers</h3>
+            <div className="flex-1 overflow-hidden relative group">
+              {/* Fade masks */}
+              <div className="absolute top-0 left-0 right-0 h-8 z-10 pointer-events-none" style={{ background: "linear-gradient(to bottom, var(--bg-surface) 0%, var(--bg-surface-transparent) 100%)" }}></div>
+              <div className="absolute bottom-0 left-0 right-0 h-8 z-10 pointer-events-none" style={{ background: "linear-gradient(to top, var(--bg-surface) 0%, var(--bg-surface-transparent) 100%)" }}></div>
+              
+              <motion.div 
+                className="space-y-4"
+                animate={{ y: [0, -150] }}
+                transition={{ repeat: Infinity, duration: 10, ease: "linear", repeatType: "loop" }}
+              >
+                {/* Double the list for seamless loop */}
+                {[...topFreelancers, ...topFreelancers].map((freelancer, i) => (
+                  <div key={i} className="flex justify-between items-center pb-4 border-b border-surface-border">
+                    <div>
+                      <div className="text-xs text-foreground font-bold">{freelancer.name}</div>
+                      <div className="text-[10px] text-muted font-mono">{freelancer.role}</div>
+                    </div>
+                    <div className="text-xs font-mono font-bold flex items-center text-[#F59E0B]">
+                      {freelancer.rating} <Star className="w-3 h-3 ml-1" />
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="bg-surface border border-surface-border rounded-2xl p-6 overflow-hidden flex flex-col h-[300px]">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider font-mono mb-4 shrink-0">Live Platform Activity</h3>
+            <div className="flex-1 overflow-hidden relative group">
+              {/* Fade masks */}
+              <div className="absolute top-0 left-0 right-0 h-8 z-10 pointer-events-none" style={{ background: "linear-gradient(to bottom, var(--bg-surface) 0%, var(--bg-surface-transparent) 100%)" }}></div>
+              <div className="absolute bottom-0 left-0 right-0 h-8 z-10 pointer-events-none" style={{ background: "linear-gradient(to top, var(--bg-surface) 0%, var(--bg-surface-transparent) 100%)" }}></div>
+
+              <motion.div 
+                className="space-y-4"
+                animate={{ y: [0, -180] }}
+                transition={{ repeat: Infinity, duration: 12, ease: "linear", repeatType: "loop" }}
+              >
+                {/* Double the list for seamless loop */}
+                {[...recentActivity, ...recentActivity].map((activity, i) => (
+                  <div key={i} className="flex gap-3 relative pb-4 border-b border-surface-border">
+                    <div className="mt-1 h-2 w-2 rounded-full bg-moss shadow-[0_0_6px_rgba(132,204,22,0.8)] shrink-0"></div>
+                    <div>
+                      <div className="text-[11px] font-mono text-foreground uppercase mb-0.5">{activity.action}</div>
+                      <div className="text-xs text-muted">{activity.title}</div>
+                      <div className="text-[10px] text-muted/60 mt-1">{activity.time}</div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+          </div>
+        </aside>
+      </div>
 
       </main>
 

@@ -6,6 +6,7 @@ import { BellIcon } from "@heroicons/react/24/outline";
 
 import NotificationPanel from "@/components/notifications/NotificationPanel";
 import { AnimatePresence } from "framer-motion";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -14,6 +15,7 @@ export default function Navbar() {
     { name: "Marketplace", href: "/bounties" },
     { name: "Applications", href: "/applications" },
     { name: "Projects", href: "/projects" },
+    { name: "Messages", href: "/messages" },
     { name: "Community", href: "/community" },
     { name: "Wallet", href: "/wallet" },
     { name: "Profile", href: "/profile" },
@@ -21,10 +23,10 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-[#101312]/70 border-b border-[#181D1A] flex items-center justify-between px-8">
+    <nav className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-8">
       {/* Left: Logo */}
       <div className="flex-shrink-0">
-        <Link href="/" className="text-2xl font-bold tracking-tight text-[#F5F5F4] interactive">
+        <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive">
           W3HIRE
         </Link>
       </div>
@@ -48,9 +50,9 @@ export default function Navbar() {
       </div>
 
       {/* Right: Notifications & Role Toggle */}
-      <div className="flex items-center space-x-8 flex-shrink-0">
+      <div className="flex items-center space-x-4 md:space-x-8 flex-shrink-0">
 
-
+        <ThemeToggle />
         {/* Notifications */}
         <div className="relative">
           <button 
