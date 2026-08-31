@@ -157,6 +157,7 @@ export const clientBounties: MockBounty[] = [
 export interface MockMilestone {
   id: string;
   name: string;
+  title?: string;
   amount: string;
   status: "Completed" | "In Progress" | "Pending";
 }
@@ -165,9 +166,11 @@ export interface MockProject {
   id: string;
   title: string;
   clientName: string;
+  client?: MockClientStats;
   budget: string;
   status: string;
   nextMilestone: string;
+  startedAt?: string;
   lastUpdated: string;
   milestones: MockMilestone[];
 }
@@ -177,69 +180,104 @@ export const activeProjects: MockProject[] = [
     id: "p1",
     title: "DeFi Yield Aggregator Frontend",
     clientName: "0x88...11aB",
+    client: {
+      name: "0x88...11aB",
+      handle: "@yield_agg",
+      rating: 4.9,
+      totalBounties: 5,
+    },
+    startedAt: "2 weeks ago",
     budget: "$8,500",
     status: "In Progress",
     nextMilestone: "Component Library Handoff",
     lastUpdated: "2 days ago",
     milestones: [
-      { id: "m1", name: "Initial Wireframes", amount: "$1,500", status: "Completed" },
-      { id: "m2", name: "Component Library Handoff", amount: "$3,000", status: "In Progress" },
-      { id: "m3", name: "Final Integration", amount: "$4,000", status: "Pending" }
+      { id: "m1", name: "Initial Wireframes", title: "Initial Wireframes", amount: "$1,500", status: "Completed" },
+      { id: "m2", name: "Component Library Handoff", title: "Component Library Handoff", amount: "$3,000", status: "In Progress" },
+      { id: "m3", name: "Final Integration", title: "Final Integration", amount: "$4,000", status: "Pending" }
     ]
   },
   {
     id: "p2",
     title: "Solana MEV Bot Optimization",
     clientName: "MEV Labs",
+    client: {
+      name: "MEV Labs",
+      handle: "@mev_labs",
+      rating: 4.5,
+      totalBounties: 8,
+    },
+    startedAt: "1 month ago",
     budget: "$20,000",
     status: "Awaiting Escrow Release",
     nextMilestone: "Final Review",
     lastUpdated: "5 hours ago",
     milestones: [
-      { id: "m1", name: "Architecture Audit", amount: "$5,000", status: "Completed" },
-      { id: "m2", name: "Optimization Implementation", amount: "$10,000", status: "Completed" },
-      { id: "m3", name: "Final Review", amount: "$5,000", status: "In Progress" }
+      { id: "m1", name: "Architecture Audit", title: "Architecture Audit", amount: "$5,000", status: "Completed" },
+      { id: "m2", name: "Optimization Implementation", title: "Optimization Implementation", amount: "$10,000", status: "Completed" },
+      { id: "m3", name: "Final Review", title: "Final Review", amount: "$5,000", status: "In Progress" }
     ]
   },
   {
     id: "p3",
     title: "Tokenomics Paper Translation (JP)",
     clientName: "Sakura Finance",
+    client: {
+      name: "Sakura Finance",
+      handle: "@sakura",
+      rating: 5.0,
+      totalBounties: 2,
+    },
+    startedAt: "3 days ago",
     budget: "$500",
     status: "Milestone Review",
     nextMilestone: "Chapter 1-3 Review",
     lastUpdated: "1 day ago",
     milestones: [
-      { id: "m1", name: "Chapter 1-3 Review", amount: "$250", status: "In Progress" },
-      { id: "m2", name: "Final Document", amount: "$250", status: "Pending" }
+      { id: "m1", name: "Chapter 1-3 Review", title: "Chapter 1-3 Review", amount: "$250", status: "In Progress" },
+      { id: "m2", name: "Final Document", title: "Final Document", amount: "$250", status: "Pending" }
     ]
   },
   {
     id: "p4",
     title: "NFT Marketplace Smart Contracts",
     clientName: "ArtBlocks",
+    client: {
+      name: "ArtBlocks",
+      handle: "@artblocks",
+      rating: 4.9,
+      totalBounties: 24,
+    },
+    startedAt: "3 weeks ago",
     budget: "$15,000",
     status: "Completed",
     nextMilestone: "N/A",
     lastUpdated: "1 week ago",
     milestones: [
-      { id: "m1", name: "Contract Architecture", amount: "$5,000", status: "Completed" },
-      { id: "m2", name: "Test Suite", amount: "$5,000", status: "Completed" },
-      { id: "m3", name: "Final Audit Prep", amount: "$5,000", status: "Completed" }
+      { id: "m1", name: "Contract Architecture", title: "Contract Architecture", amount: "$5,000", status: "Completed" },
+      { id: "m2", name: "Test Suite", title: "Test Suite", amount: "$5,000", status: "Completed" },
+      { id: "m3", name: "Final Audit Prep", title: "Final Audit Prep", amount: "$5,000", status: "Completed" }
     ]
   },
   {
     id: "p5",
     title: "ZK-Rollup Bridge Interface",
     clientName: "Layer2DAO",
+    client: {
+      name: "Layer2DAO",
+      handle: "@layer2dao",
+      rating: 4.8,
+      totalBounties: 12,
+    },
+    startedAt: "5 days ago",
     budget: "$5,000",
     status: "In Progress",
     nextMilestone: "Initial Wireframes",
     lastUpdated: "3 days ago",
     milestones: [
-      { id: "m1", name: "Initial Wireframes", amount: "$1,500", status: "In Progress" },
-      { id: "m2", name: "Prototyping", amount: "$2,000", status: "Pending" },
-      { id: "m3", name: "Final Build", amount: "$1,500", status: "Pending" }
+      { id: "m1", name: "Initial Wireframes", title: "Initial Wireframes", amount: "$1,500", status: "In Progress" },
+      { id: "m2", name: "Prototyping", title: "Prototyping", amount: "$2,000", status: "Pending" },
+      { id: "m3", name: "Final Build", title: "Final Build", amount: "$1,500", status: "Pending" }
     ]
   }
 ];
@@ -382,7 +420,7 @@ export const initialNotifications: MockNotification[] = [
     message: "New proposal received on ZK-Rollup Bridge Interface",
     time: "1h ago",
     isRead: false,
-    href: "/bounties/1" // Link to the bounty to view proposals
+    href: "/bounties/1"
   },
   {
     id: "n3",

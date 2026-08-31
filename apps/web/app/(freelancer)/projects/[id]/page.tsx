@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { activeProjects } from "@/lib/mock-data";
 import EmptyState from "@/components/ui/EmptyState";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
@@ -27,21 +27,21 @@ export default function ProjectDetailPage() {
           description="We couldn't find the contract you're looking for. It may have been completed or closed."
           action={{
             label: "Back to Contracts",
-            onClick: () => window.location.href = "/projects"
+            onClick: () => (window.location.href = "/projects")
           }}
         />
       </div>
     );
   }
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 1, 0.5, 1] } }
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };
 
   return (
@@ -83,11 +83,11 @@ export default function ProjectDetailPage() {
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center space-x-2 text-sm text-[#A3A3A3]">
             <ClockIcon className="h-5 w-5" />
-            <span>Started {project.startedAt}</span>
+            <span>Started {project.startedAt || "Recently"}</span>
           </div>
           <div className="h-6 w-px bg-white/10 hidden md:block"></div>
           <div className="flex items-center space-x-2 text-sm font-medium text-[#F5F5F4]">
-            Client: {project.client}
+            Client: {project.clientName || project.client?.name}
           </div>
         </div>
       </motion.div>
@@ -96,7 +96,6 @@ export default function ProjectDetailPage() {
         {/* Main Content: Milestones */}
         <motion.div variants={itemVariants} className="lg:col-span-2 space-y-12">
           <div className="bg-[#181D1A] border border-white/5 rounded-3xl p-8 relative overflow-hidden group">
-             {/* Subtle noise */}
             <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none"></div>
             
             <div className="relative z-10">
@@ -108,7 +107,7 @@ export default function ProjectDetailPage() {
               </h3>
               
               <div className="space-y-6">
-                {project.milestones?.map((milestone, idx) => (
+                {project.milestones?.map((milestone) => (
                   <div key={milestone.id} className="relative pl-8 border-l-2 border-white/10 last:border-transparent pb-6 last:pb-0">
                     {/* Timeline Node */}
                     <div className={`absolute -left-[11px] top-1 w-5 h-5 rounded-full border-4 border-[#181D1A] ${
@@ -119,7 +118,7 @@ export default function ProjectDetailPage() {
                     <div className="bg-[#101312] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors interactive">
                       <div className="flex justify-between items-start mb-2">
                         <div className="font-bold text-lg text-[#F5F5F4]">
-                          {milestone.title}
+                          {milestone.title || milestone.name}
                         </div>
                         <div className="font-bold text-[#22C55E]">
                           {milestone.amount}
