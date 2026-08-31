@@ -18,9 +18,11 @@ export interface MockBounty {
   clientStats: MockClientStats;
   status?: BountyStatus;
   applicantCount?: number;
+  durationWeeks?: number;
+  proOnly?: boolean;
 }
 
-export const dummyBounties: MockBounty[] = [
+export const bounties: MockBounty[] = [
   {
     id: "1",
     title: "Build a ZK-Rollup Bridge Interface",
@@ -34,7 +36,8 @@ export const dummyBounties: MockBounty[] = [
       handle: "@layer2dao",
       rating: 4.8,
       totalBounties: 12
-    }
+    },
+    durationWeeks: 4
   },
   {
     id: "2",
@@ -49,7 +52,9 @@ export const dummyBounties: MockBounty[] = [
       handle: "@yield_protocol",
       rating: 5.0,
       totalBounties: 3
-    }
+    },
+    durationWeeks: 2,
+    proOnly: true
   },
   {
     id: "3",
@@ -64,7 +69,8 @@ export const dummyBounties: MockBounty[] = [
       handle: "@artblocks",
       rating: 4.9,
       totalBounties: 24
-    }
+    },
+    durationWeeks: 8
   },
   {
     id: "4",
@@ -79,80 +85,13 @@ export const dummyBounties: MockBounty[] = [
       handle: "@mev_labs",
       rating: 4.5,
       totalBounties: 8
-    }
+    },
+    durationWeeks: 16,
+    proOnly: true
   }
 ];
 
-export const clientBounties: MockBounty[] = [
-  {
-    id: "c1",
-    title: "NFT Marketplace Smart Contracts",
-    description: "Build robust and secure ERC721 and ERC1155 smart contracts for a new art platform.",
-    fullDescription: "Build robust and secure ERC721 and ERC1155 smart contracts for a new art platform. Needs to support lazy minting, royalty enforcement (EIP-2981), and multiple currency types for purchases. A full suite of tests via Hardhat/Foundry is required.",
-    budget: "$15,000",
-    tags: ["Solidity", "ERC721", "Audit"],
-    postedAt: "1 week ago",
-    status: "Open",
-    applicantCount: 14,
-    clientStats: {
-      name: "You",
-      handle: "@you",
-      rating: 5.0,
-      totalBounties: 4
-    }
-  },
-  {
-    id: "c2",
-    title: "DeFi Yield Aggregator Frontend",
-    description: "Frontend interface for our multi-chain yield aggregator using React and Tailwind.",
-    fullDescription: "Frontend interface for our multi-chain yield aggregator using React and Tailwind. Users should be able to connect wallets (WalletConnect, MetaMask), view aggregated APY metrics, and deposit/withdraw funds seamlessly. Real-time chart integration (e.g., lightweight-charts) is a major plus.",
-    budget: "$8,500",
-    tags: ["React", "Web3.js", "Tailwind"],
-    postedAt: "2 weeks ago",
-    status: "In Review",
-    applicantCount: 22,
-    clientStats: {
-      name: "You",
-      handle: "@you",
-      rating: 5.0,
-      totalBounties: 4
-    }
-  },
-  {
-    id: "c3",
-    title: "Solana MEV Bot Optimization",
-    description: "Optimize an existing MEV bot written in Rust for lower latency execution.",
-    fullDescription: "Optimize an existing MEV bot written in Rust for lower latency execution. Focus on minimizing serialization/deserialization overhead and network roundtrips. We need a detailed benchmark report before and after optimizations.",
-    budget: "$20,000",
-    tags: ["Rust", "Solana", "MEV"],
-    postedAt: "1 month ago",
-    status: "In Progress",
-    applicantCount: 3,
-    clientStats: {
-      name: "You",
-      handle: "@you",
-      rating: 5.0,
-      totalBounties: 4
-    }
-  },
-  {
-    id: "c4",
-    title: "Tokenomics Paper Translation (JP)",
-    description: "Translate a 20-page tokenomics technical paper from English to Japanese.",
-    fullDescription: "Translate a 20-page tokenomics technical paper from English to Japanese. The translator MUST be fluent in both languages and possess a deep understanding of crypto and DeFi terminology in Japanese to ensure accurate localization.",
-    budget: "$500",
-    tags: ["Translation", "Japanese"],
-    postedAt: "2 months ago",
-    status: "Completed",
-    applicantCount: 8,
-    clientStats: {
-      name: "You",
-      handle: "@you",
-      rating: 5.0,
-      totalBounties: 4
-    }
-  }
-];
+
 
 export interface MockMilestone {
   id: string;
@@ -169,10 +108,14 @@ export interface MockProject {
   client?: MockClientStats;
   budget: string;
   status: string;
+  tags?: string[];
   nextMilestone: string;
   startedAt?: string;
   lastUpdated: string;
   milestones: MockMilestone[];
+  durationWeeks?: number;
+  isMine?: boolean;
+  description?: string;
 }
 
 export const activeProjects: MockProject[] = [
@@ -189,13 +132,15 @@ export const activeProjects: MockProject[] = [
     startedAt: "2 weeks ago",
     budget: "$8,500",
     status: "In Progress",
+    tags: ["Frontend", "React", "DeFi"],
     nextMilestone: "Component Library Handoff",
     lastUpdated: "2 days ago",
     milestones: [
-      { id: "m1", name: "Initial Wireframes", title: "Initial Wireframes", amount: "$1,500", status: "Completed" },
-      { id: "m2", name: "Component Library Handoff", title: "Component Library Handoff", amount: "$3,000", status: "In Progress" },
-      { id: "m3", name: "Final Integration", title: "Final Integration", amount: "$4,000", status: "Pending" }
-    ]
+      { id: "m1", name: "Initial Wireframes", amount: "$1,500", status: "Completed" },
+      { id: "m2", name: "Component Library Handoff", amount: "$3,000", status: "In Progress" },
+      { id: "m3", name: "Final Integration", amount: "$4,000", status: "Pending" }
+    ],
+    isMine: true
   },
   {
     id: "p2",
@@ -210,13 +155,15 @@ export const activeProjects: MockProject[] = [
     startedAt: "1 month ago",
     budget: "$20,000",
     status: "Awaiting Escrow Release",
+    tags: ["Rust", "Solana", "MEV"],
     nextMilestone: "Final Review",
     lastUpdated: "5 hours ago",
     milestones: [
-      { id: "m1", name: "Architecture Audit", title: "Architecture Audit", amount: "$5,000", status: "Completed" },
-      { id: "m2", name: "Optimization Implementation", title: "Optimization Implementation", amount: "$10,000", status: "Completed" },
-      { id: "m3", name: "Final Review", title: "Final Review", amount: "$5,000", status: "In Progress" }
-    ]
+      { id: "m1", name: "Architecture Audit", amount: "$5,000", status: "Completed" },
+      { id: "m2", name: "Optimization Implementation", amount: "$10,000", status: "Completed" },
+      { id: "m3", name: "Final Review", amount: "$5,000", status: "In Progress" }
+    ],
+    isMine: true
   },
   {
     id: "p3",
@@ -231,12 +178,14 @@ export const activeProjects: MockProject[] = [
     startedAt: "3 days ago",
     budget: "$500",
     status: "Milestone Review",
+    tags: ["Translation", "Tokenomics", "Writing"],
     nextMilestone: "Chapter 1-3 Review",
     lastUpdated: "1 day ago",
     milestones: [
-      { id: "m1", name: "Chapter 1-3 Review", title: "Chapter 1-3 Review", amount: "$250", status: "In Progress" },
-      { id: "m2", name: "Final Document", title: "Final Document", amount: "$250", status: "Pending" }
-    ]
+      { id: "m1", name: "Chapter 1-3 Review", amount: "$250", status: "In Progress" },
+      { id: "m2", name: "Final Document", amount: "$250", status: "Pending" }
+    ],
+    isMine: true
   },
   {
     id: "p4",
@@ -251,13 +200,15 @@ export const activeProjects: MockProject[] = [
     startedAt: "3 weeks ago",
     budget: "$15,000",
     status: "Completed",
+    tags: ["Solidity", "Smart Contracts", "Audit"],
     nextMilestone: "N/A",
     lastUpdated: "1 week ago",
     milestones: [
-      { id: "m1", name: "Contract Architecture", title: "Contract Architecture", amount: "$5,000", status: "Completed" },
-      { id: "m2", name: "Test Suite", title: "Test Suite", amount: "$5,000", status: "Completed" },
-      { id: "m3", name: "Final Audit Prep", title: "Final Audit Prep", amount: "$5,000", status: "Completed" }
-    ]
+      { id: "m1", name: "Contract Architecture", amount: "$5,000", status: "Completed" },
+      { id: "m2", name: "Test Suite", amount: "$5,000", status: "Completed" },
+      { id: "m3", name: "Final Audit Prep", amount: "$5,000", status: "Completed" }
+    ],
+    isMine: true
   },
   {
     id: "p5",
@@ -272,13 +223,41 @@ export const activeProjects: MockProject[] = [
     startedAt: "5 days ago",
     budget: "$5,000",
     status: "In Progress",
+    tags: ["Frontend", "ZK", "Web3"],
     nextMilestone: "Initial Wireframes",
     lastUpdated: "3 days ago",
     milestones: [
-      { id: "m1", name: "Initial Wireframes", title: "Initial Wireframes", amount: "$1,500", status: "In Progress" },
-      { id: "m2", name: "Prototyping", title: "Prototyping", amount: "$2,000", status: "Pending" },
-      { id: "m3", name: "Final Build", title: "Final Build", amount: "$1,500", status: "Pending" }
-    ]
+      { id: "m1", name: "Initial Wireframes", amount: "$1,500", status: "In Progress" },
+      { id: "m2", name: "Prototyping", amount: "$2,000", status: "Pending" },
+      { id: "m3", name: "Final Build", amount: "$1,500", status: "Pending" }
+    ],
+    isMine: true
+  },
+  {
+    id: "p6",
+    title: "Rust Smart Contract for DEX",
+    clientName: "SwapProtocol",
+    budget: "$12,000",
+    status: "Completed",
+    tags: ["Rust", "Solana", "DEX"],
+    nextMilestone: "N/A",
+    lastUpdated: "2 weeks ago",
+    milestones: [],
+    isMine: false,
+    description: "Built a fully functional AMM smart contract on Solana using Anchor. Includes concentrated liquidity and limit orders."
+  },
+  {
+    id: "p7",
+    title: "Web3 Wallet Extension UI",
+    clientName: "NextGen Wallet",
+    budget: "$9,000",
+    status: "In Progress",
+    tags: ["Frontend", "React", "Extension"],
+    nextMilestone: "Beta Release",
+    lastUpdated: "1 day ago",
+    milestones: [],
+    isMine: false,
+    description: "Developing the user interface for a new non-custodial browser wallet extension with multi-chain support."
   }
 ];
 
@@ -447,3 +426,74 @@ export const initialNotifications: MockNotification[] = [
     href: "/bounties/2"
   }
 ];
+
+export interface MockApplication {
+  id: string;
+  bountyId: string;
+  bountyTitle: string;
+  appliedAt: string;
+  status: "Pending Review" | "Accepted" | "Rejected";
+}
+
+export const myApplications: MockApplication[] = [
+  {
+    id: "app-1",
+    bountyId: "1",
+    bountyTitle: "DeFi Dashboard UI Refresh",
+    appliedAt: "2 days ago",
+    status: "Accepted"
+  },
+  {
+    id: "app-2",
+    bountyId: "2",
+    bountyTitle: "Smart Contract Audit for DEX",
+    appliedAt: "1 week ago",
+    status: "Rejected"
+  },
+  {
+    id: "app-3",
+    bountyId: "4",
+    bountyTitle: "Zero-Knowledge Proof Implementation",
+    appliedAt: "3 hours ago",
+    status: "Pending Review"
+  }
+];
+
+
+export interface MockReview {
+  id: string;
+  author: string;
+  rating: number; // 1-5
+  comment: string;
+  date: string;
+}
+
+export const freelancerStats = {
+  rating: 4.8,
+  completedProjects: 27,
+  reviewsCount: 19,
+  reviews: [
+    {
+      id: "rev-1",
+      author: "Defi Labs",
+      rating: 5,
+      comment: "Excellent work on the DEX UI. Delivered ahead of schedule and the code was exceptionally clean.",
+      date: "2 weeks ago"
+    },
+    {
+      id: "rev-2",
+      author: "ZK Systems",
+      rating: 4,
+      comment: "Great communication. The ZK integration was complex but they handled it well.",
+      date: "1 month ago"
+    },
+    {
+      id: "rev-3",
+      author: "NFT World",
+      rating: 5,
+      comment: "Incredible attention to detail on the smart contract audits. Will definitely hire again.",
+      date: "2 months ago"
+    }
+  ] as MockReview[]
+};
+

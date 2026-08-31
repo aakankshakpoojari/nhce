@@ -3,20 +3,21 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BellIcon } from "@heroicons/react/24/outline";
-import { useRole } from "@/contexts/RoleContext";
+
 import NotificationPanel from "@/components/notifications/NotificationPanel";
 import { AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
-  const { isClient, setIsClient } = useRole();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const navLinks = [
-    { name: "Bounties", href: "/bounties" },
+    { name: "Marketplace", href: "/bounties" },
+    { name: "Applications", href: "/applications" },
     { name: "Projects", href: "/projects" },
     { name: "Community", href: "/community" },
     { name: "Wallet", href: "/wallet" },
     { name: "Profile", href: "/profile" },
+    { name: "Pro", href: "/pro", isPremium: true },
   ];
 
   return (
@@ -34,38 +35,21 @@ export default function Navbar() {
           <Link
             key={link.name}
             href={link.href}
-            className="text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive"
+            className={`text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center ${
+              link.isPremium ? "text-[#BEF264]" : ""
+            }`}
           >
             {link.name}
+            {link.isPremium && (
+              <span className="ml-1.5 h-2 w-2 rounded-full bg-[#BEF264] shadow-[0_0_6px_rgba(190,242,100,0.8)]"></span>
+            )}
           </Link>
         ))}
       </div>
 
       {/* Right: Notifications & Role Toggle */}
       <div className="flex items-center space-x-8 flex-shrink-0">
-        {/* Role Toggle Switch */}
-        <div className="flex items-center space-x-2 bg-[#181D1A] p-1.5 rounded-full border border-white/5 shadow-inner">
-          <button
-            onClick={() => setIsClient(false)}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-500 var(--ease-fluid) interactive ${
-              !isClient 
-                ? "bg-[#84CC16] text-[#101312] shadow-[0_0_15px_rgba(132,204,22,0.5)]" 
-                : "text-[var(--color-muted)] hover:text-[#F5F5F4]"
-            }`}
-          >
-            Freelancer
-          </button>
-          <button
-            onClick={() => setIsClient(true)}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-500 var(--ease-fluid) interactive ${
-              isClient 
-                ? "bg-[#84CC16] text-[#101312] shadow-[0_0_15px_rgba(132,204,22,0.5)]" 
-                : "text-[var(--color-muted)] hover:text-[#F5F5F4]"
-            }`}
-          >
-            Client
-          </button>
-        </div>
+
 
         {/* Notifications */}
         <div className="relative">

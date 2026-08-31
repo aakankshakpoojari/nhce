@@ -3,19 +3,16 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { CheckBadgeIcon, ClockIcon, ArrowLeftIcon, DocumentMagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { useRole } from "@/contexts/RoleContext";
-import { dummyBounties, clientBounties } from "@/lib/mock-data";
+import { bounties } from "@/lib/mock-data";
 import EmptyState from "@/components/ui/EmptyState";
-import { motion, Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
+import { useApplications } from "@/contexts/ApplicationContext";
 
 export default function BountyDetailPage() {
   const { id } = useParams();
-  const { isClient } = useRole();
+  const { applyToBounty, hasApplied } = useApplications();
 
-  // Find the bounty
-  const bounty = isClient
-    ? clientBounties.find((b) => b.id === id)
-    : dummyBounties.find((b) => b.id === id);
+  const bounty = bounties.find(b => b.id === id);
 
   if (!bounty) {
     return (
@@ -33,7 +30,7 @@ export default function BountyDetailPage() {
     );
   }
 
-  // Explicitly typed Variants to resolve Framer Motion TS errors
+
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -41,7 +38,11 @@ export default function BountyDetailPage() {
 
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 1, 0.5, 1] } },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: [0.25, 1, 0.5, 1] as const }
+    }
   };
 
   return (
@@ -109,53 +110,27 @@ export default function BountyDetailPage() {
             </p>
           </div>
 
-          {!isClient && (
-            <div className="pt-8 border-t border-white/5">
+          <div className="pt-8 border-t border-white/5">
+            {hasApplied(bounty.id) ? (
+              <div className="inline-flex items-center space-x-2 px-8 py-4 bg-white/5 text-[#A3A3A3] font-bold rounded-full cursor-not-allowed">
+                <CheckBadgeIcon className="w-6 h-6 text-[#84CC16]" />
+                <span>Application Submitted</span>
+              </div>
+            ) : (
               <button
-                onClick={() => alert("Mock Proposal Submitted!")}
+                onClick={() => applyToBounty(bounty.id, bounty.title)}
                 className="w-full md:w-auto px-8 py-4 bg-[#84CC16] hover:bg-[#bef264] text-[#101312] font-bold rounded-full transition-colors duration-300 shadow-[0_0_20px_rgba(132,204,22,0.3)] hover:shadow-[0_0_30px_rgba(190,242,100,0.5)] interactive text-lg"
               >
-                Submit Proposal
+                Apply Now
               </button>
-            </div>
-          )}
-
-          {isClient && (
-            <div className="pt-8 border-t border-white/5">
-              <h3 className="text-2xl font-bold text-[#F5F5F4] mb-8 tracking-tight">
-                Proposals Received ({bounty.applicantCount})
-              </h3>
-              <div className="space-y-4">
-                {[1, 2, 3].slice(0, bounty.applicantCount || 0).map((i) => (
-                  <div
-                    key={i}
-                    className="bg-[#181D1A] border border-white/5 rounded-2xl p-6 flex justify-between items-center interactive cursor-pointer hover:border-[#84CC16]/30 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center font-bold text-[#F5F5F4]">
-                        D{i}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-[#F5F5F4]">Developer {i}</div>
-                        <div className="text-sm text-[#A3A3A3]">Top Rated • 5 Jobs</div>
-                      </div>
-                    </div>
-                    <button className="text-sm font-semibold text-[#BEF264]">Review</button>
-                  </div>
-                ))}
-                {(bounty.applicantCount || 0) > 3 && (
-                  <button className="w-full py-4 text-[#A3A3A3] hover:text-[#F5F5F4] font-medium transition-colors text-sm">
-                    View all {bounty.applicantCount} proposals
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </motion.div>
 
         {/* Sidebar Info */}
         <motion.div variants={itemVariants} className="space-y-8">
           <div className="bg-[#181D1A] border border-white/5 rounded-3xl p-8 relative overflow-hidden group">
+            {/* Subtle noise */}
             <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none"></div>
 
             <h3 className="text-[#F5F5F4] font-bold text-xl mb-6 tracking-tight relative z-10">Client Info</h3>

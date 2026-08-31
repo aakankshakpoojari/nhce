@@ -24,12 +24,17 @@ const config: Config = {
       },
       animation: {
         float: "float 6s ease-in-out infinite",
+        ticker: "ticker 15s linear infinite",
       },
       keyframes: {
         float: {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-8px)" },
         },
+        ticker: {
+          "0%": { transform: "translateY(0)" },
+          "100%": { transform: "translateY(-50%)" },
+        }
       },
     },
   },
