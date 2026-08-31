@@ -1,7 +1,7 @@
 import React from "react";
 
 interface EmptyStateProps {
-  icon: React.ElementType;
+  icon?: React.ElementType;
   title: string;
   description: string;
   action?: {
@@ -18,9 +18,11 @@ export default function EmptyState({ icon: Icon, title, description, action }: E
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#84CC16]/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-[#84CC16]/20 transition-colors duration-1000"></div>
 
       <div className="relative flex flex-col items-center text-center z-10 max-w-md">
-        <div className="w-20 h-20 rounded-full bg-[#101312] border border-white/5 flex items-center justify-center mb-8 shadow-xl">
-          <Icon className="h-8 w-8 text-[#A3A3A3]" strokeWidth={1.5} />
-        </div>
+        {Icon && (
+          <div className="w-20 h-20 rounded-full bg-[#101312] border border-white/5 flex items-center justify-center mb-8 shadow-xl">
+            <Icon className="h-8 w-8 text-[#A3A3A3]" strokeWidth={1.5} />
+          </div>
+        )}
         
         <h3 className="text-3xl font-bold text-[#F5F5F4] mb-4 tracking-tight">
           {title}

@@ -23,7 +23,7 @@ export default function WalletPage() {
 
   const itemVariants = {
     hidden: { opacity: 0, x: -10 },
-    show: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } }
+    show: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] as const } }
   };
 
   return (

@@ -1,6 +1,6 @@
 import CustomCursor from "@/components/animations/CustomCursor";
 import Navbar from "@/components/navigation/Navbar";
-import { RoleProvider } from "@/contexts/RoleContext";
+import { ApplicationProvider } from "@/contexts/ApplicationContext";
 
 export default function FreelancerLayout({
   children,
@@ -8,14 +8,14 @@ export default function FreelancerLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RoleProvider>
-      <div className="min-h-screen bg-[var(--color-charcoal)] text-[var(--color-off-white)] selection:bg-[#84CC16] selection:text-[#101312] font-sans">
-        <CustomCursor />
-        <Navbar />
-        <main className="min-h-screen pt-24 px-8 mx-auto max-w-[1400px]">
+    <div className="min-h-screen bg-[var(--color-charcoal)] text-[var(--color-off-white)] selection:bg-[#84CC16] selection:text-[#101312] font-sans">
+      <CustomCursor />
+      <Navbar />
+      <main className="min-h-screen pt-24 px-8 mx-auto max-w-[1400px]">
+        <ApplicationProvider>
           {children}
-        </main>
-      </div>
-    </RoleProvider>
+        </ApplicationProvider>
+      </main>
+    </div>
   );
 }
