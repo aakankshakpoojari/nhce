@@ -11,7 +11,7 @@ export default function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const navLinks = [
-    { name: "Bounties", href: "/bounties" },
+    { name: "Marketplace", href: "/bounties" },
     { name: "Applications", href: "/applications" },
     { name: "Projects", href: "/projects" },
     { name: "Community", href: "/community" },

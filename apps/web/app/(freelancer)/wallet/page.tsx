@@ -2,7 +2,7 @@
 
 import { ArrowsRightLeftIcon, ArrowUpRightIcon, ArrowDownLeftIcon } from "@heroicons/react/24/outline";
 import EmptyState from "@/components/ui/EmptyState";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 import { transactions } from "@/lib/mock-data";
 
@@ -13,7 +13,7 @@ export default function WalletPage() {
     { label: "Available to Withdraw", value: "$14,500.00" },
   ];
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -21,7 +21,7 @@ export default function WalletPage() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, x: -10 },
     show: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] as const } }
   };

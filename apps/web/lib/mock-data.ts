@@ -96,6 +96,7 @@ export const bounties: MockBounty[] = [
 export interface MockMilestone {
   id: string;
   name: string;
+  title?: string;
   amount: string;
   status: "Completed" | "In Progress" | "Pending";
 }
@@ -104,10 +105,12 @@ export interface MockProject {
   id: string;
   title: string;
   clientName: string;
+  client?: MockClientStats;
   budget: string;
   status: string;
   tags?: string[];
   nextMilestone: string;
+  startedAt?: string;
   lastUpdated: string;
   milestones: MockMilestone[];
   durationWeeks?: number;
@@ -120,6 +123,13 @@ export const activeProjects: MockProject[] = [
     id: "p1",
     title: "DeFi Yield Aggregator Frontend",
     clientName: "0x88...11aB",
+    client: {
+      name: "0x88...11aB",
+      handle: "@yield_agg",
+      rating: 4.9,
+      totalBounties: 5,
+    },
+    startedAt: "2 weeks ago",
     budget: "$8,500",
     status: "In Progress",
     tags: ["Frontend", "React", "DeFi"],
@@ -136,6 +146,13 @@ export const activeProjects: MockProject[] = [
     id: "p2",
     title: "Solana MEV Bot Optimization",
     clientName: "MEV Labs",
+    client: {
+      name: "MEV Labs",
+      handle: "@mev_labs",
+      rating: 4.5,
+      totalBounties: 8,
+    },
+    startedAt: "1 month ago",
     budget: "$20,000",
     status: "Awaiting Escrow Release",
     tags: ["Rust", "Solana", "MEV"],
@@ -152,6 +169,13 @@ export const activeProjects: MockProject[] = [
     id: "p3",
     title: "Tokenomics Paper Translation (JP)",
     clientName: "Sakura Finance",
+    client: {
+      name: "Sakura Finance",
+      handle: "@sakura",
+      rating: 5.0,
+      totalBounties: 2,
+    },
+    startedAt: "3 days ago",
     budget: "$500",
     status: "Milestone Review",
     tags: ["Translation", "Tokenomics", "Writing"],
@@ -167,6 +191,13 @@ export const activeProjects: MockProject[] = [
     id: "p4",
     title: "NFT Marketplace Smart Contracts",
     clientName: "ArtBlocks",
+    client: {
+      name: "ArtBlocks",
+      handle: "@artblocks",
+      rating: 4.9,
+      totalBounties: 24,
+    },
+    startedAt: "3 weeks ago",
     budget: "$15,000",
     status: "Completed",
     tags: ["Solidity", "Smart Contracts", "Audit"],
@@ -183,6 +214,13 @@ export const activeProjects: MockProject[] = [
     id: "p5",
     title: "ZK-Rollup Bridge Interface",
     clientName: "Layer2DAO",
+    client: {
+      name: "Layer2DAO",
+      handle: "@layer2dao",
+      rating: 4.8,
+      totalBounties: 12,
+    },
+    startedAt: "5 days ago",
     budget: "$5,000",
     status: "In Progress",
     tags: ["Frontend", "ZK", "Web3"],
@@ -361,7 +399,7 @@ export const initialNotifications: MockNotification[] = [
     message: "New proposal received on ZK-Rollup Bridge Interface",
     time: "1h ago",
     isRead: false,
-    href: "/bounties/1" // Link to the bounty to view proposals
+    href: "/bounties/1"
   },
   {
     id: "n3",

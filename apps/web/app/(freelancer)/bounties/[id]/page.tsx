@@ -23,16 +23,17 @@ export default function BountyDetailPage() {
           description="We couldn't find the bounty you're looking for. It may have been removed, filled, or you might have an incorrect link."
           action={{
             label: "Back to Bounties",
-            onClick: () => window.location.href = "/bounties"
+            onClick: () => (window.location.href = "/bounties"),
           }}
         />
       </div>
     );
   }
 
+
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    show: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
 
   const itemVariants: Variants = {

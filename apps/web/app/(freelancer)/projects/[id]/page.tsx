@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { activeProjects } from "@/lib/mock-data";
 import EmptyState from "@/components/ui/EmptyState";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
@@ -27,19 +27,19 @@ export default function ProjectDetailPage() {
           description="We couldn't find the contract you're looking for. It may have been completed or closed."
           action={{
             label: "Back to Contracts",
-            onClick: () => window.location.href = "/projects"
+            onClick: () => (window.location.href = "/projects")
           }}
         />
       </div>
     );
   }
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 1, 0.5, 1] as const } }
   };

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { FolderOpenIcon } from "@heroicons/react/24/outline";
 import EmptyState from "@/components/ui/EmptyState";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import FilterBar, { type FilterState, defaultFilters } from "@/components/filters/FilterBar";
 
 import { activeProjects } from "@/lib/mock-data";
@@ -71,7 +71,7 @@ export default function ProjectsPage() {
     }
   };
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -79,7 +79,7 @@ export default function ProjectsPage() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] as const } }
   };
@@ -173,14 +173,18 @@ export default function ProjectsPage() {
                   )}
                 </div>
                 
-                <div className={`flex items-center space-x-2 px-4 py-2 rounded-full border shrink-0 ${getStatusColor(project.status)}`}>
-                  <span className={`w-2 h-2 rounded-full ${getStatusDot(project.status)}`}></span>
-                  <span className="text-xs font-bold tracking-wider uppercase">
-                    {project.status}
-                  </span>
+                <div className="text-right flex-shrink-0">
+                  <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full border text-xs font-medium ${
+                    project.status === 'Completed' ? 'bg-[#22C55E]/10 border-[#22C55E]/20 text-[#22C55E]' :
+                    project.status === 'In Progress' ? 'bg-[#84CC16]/10 border-[#84CC16]/20 text-[#84CC16]' :
+                    'bg-[#F59E0B]/10 border-[#F59E0B]/20 text-[#F59E0B]'
+                  }`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>{project.status}</span>
+                  </div>
                 </div>
               </div>
-              
+
               {project.isMine ? (
                 <div className="flex justify-between items-end border-t border-white/5 pt-8 mt-auto">
                   <div className="space-y-2">

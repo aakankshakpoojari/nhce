@@ -1,15 +1,26 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @theme inline {
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-charcoal: #101312;
   --color-surface: #181D1A;
+  --color-surface-hover: #222925;
+  --color-surface-border: #28332D;
   --color-moss: #84CC16;
+  --color-moss-hover: #65A30D;
   --color-emerald: #22C55E;
+  --color-emerald-brand: #22C55E;
   --color-lime: #BEF264;
+  --color-softlime: #BEF264;
   --color-off-white: #F5F5F4;
+  --color-offwhite: #F5F5F4;
   --color-muted: #A3A3A3;
+  --color-mutedgray: #A3A3A3;
   --color-warning: #F59E0B;
+  --color-warning-amber: #F59E0B;
   --color-error: #EF4444;
+  --color-error-red: #EF4444;
 
   --color-background: var(--color-charcoal);
   --color-foreground: var(--color-off-white);
@@ -18,7 +29,6 @@
   --font-mono: var(--font-geist-mono);
 
   --ease-fluid: cubic-bezier(0.25, 1, 0.5, 1);
-
   --animate-float: float 6s ease-in-out infinite;
   
   @keyframes float {
@@ -31,16 +41,171 @@
   }
 }
 
+:root {
+  --background: #101312;
+  --foreground: #F5F5F4;
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: #101312;
+  --foreground: #F5F5F4;
+  --card: #181D1A;
+  --popover: #181D1A;
+  --primary: #84CC16;
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: #28332D;
+  --input: #28332D;
+  --ring: #84CC16;
+  --sidebar-border: #28332D;
+  --sidebar-ring: #84CC16;
+}
+
 body {
-  background-color: var(--color-charcoal);
-  color: var(--color-off-white);
-  cursor: none; /* Antigravity: Hide default cursor */
+  background-color: #101312;
+  color: #F5F5F4;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Hide scrollbar for immersive feel */
+/* 3D Box Loader styles */
+.boxes {
+  --size: 32px;
+  --duration: 800ms;
+  height: calc(var(--size) * 2);
+  width: calc(var(--size) * 3);
+  position: relative;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  margin-top: calc(var(--size) * 1.5 * -1);
+  transform: rotateX(60deg) rotateZ(45deg) rotateY(0deg) translateZ(0px);
+}
+
+.boxes .box {
+  width: var(--size);
+  height: var(--size);
+  top: 0;
+  left: 0;
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+.boxes .box:nth-child(1) {
+  transform: translate(100%, 0);
+  animation: box1 var(--duration) linear infinite;
+}
+
+.boxes .box:nth-child(2) {
+  transform: translate(0, 100%);
+  animation: box2 var(--duration) linear infinite;
+}
+
+.boxes .box:nth-child(3) {
+  transform: translate(100%, 100%);
+  animation: box3 var(--duration) linear infinite;
+}
+
+.boxes .box:nth-child(4) {
+  transform: translate(200%, 0);
+  animation: box4 var(--duration) linear infinite;
+}
+
+.boxes .box > div {
+  --background: #84CC16;
+  --top: #BEF264;
+  --bottom: #4D7C0F;
+  --left: #65A30D;
+  --right: #84CC16;
+  background: var(--background);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: auto;
+  bottom: auto;
+  right: auto;
+  left: auto;
+  transform-origin: 0 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.boxes .box > div.face-front {
+  transform: rotateY(0deg);
+  background: var(--right);
+}
+
+.boxes .box > div.face-right {
+  transform: rotateY(90deg) translateZ(var(--size));
+  background: var(--left);
+  transform-origin: top right;
+}
+
+.boxes .box > div.face-top {
+  transform: rotateX(90deg);
+  background: var(--top);
+  transform-origin: top left;
+}
+
+.boxes .box > div.face-back {
+  transform: rotateY(180deg) translateZ(calc(var(--size) * -1));
+  background: var(--bottom);
+}
+
+@keyframes box1 {
+  0%, 50% {
+    transform: translate(100%, 0);
+  }
+  100% {
+    transform: translate(200%, 0);
+  }
+}
+
+@keyframes box2 {
+  0% {
+    transform: translate(0, 100%);
+  }
+  50% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(100%, 0);
+  }
+}
+
+@keyframes box3 {
+  0%, 50% {
+    transform: translate(100%, 100%);
+  }
+  100% {
+    transform: translate(0, 100%);
+  }
+}
+
+@keyframes box4 {
+  0% {
+    transform: translate(200%, 0);
+  }
+  50% {
+    transform: translate(200%, 100%);
+  }
+  100% {
+    transform: translate(100%, 100%);
+  }
+}
+
+/* Custom 3D Y-rotation helper */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+/* Scrollbar styles */
 ::-webkit-scrollbar {
   width: 0px;
-  background: transparent; 
+  background: transparent;
 }
