@@ -41,7 +41,7 @@ export default function MetaMaskModal({
   if (!isOpen || !role) return null;
 
   const roleTitle = role === "client" ? "Client" : "Freelancer";
-  const targetRoute = role === "client" ? "/client" : "/freelancer";
+  const targetRoute = role === "client" ? "/client" : "/bounties";
 
   const handleConnectWallet = async () => {
     try {
@@ -114,25 +114,25 @@ export default function MetaMaskModal({
 
   const handleRedirectToExistingRole = () => {
     if (!existingRole) return;
-    const dest = existingRole === "client" ? "/client" : "/freelancer";
+    const dest = existingRole === "client" ? "/client" : "/bounties";
     router.push(dest);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-[#181D1A] border border-[#28332D] rounded-3xl p-6 sm:p-8 shadow-2xl text-[#F5F5F4]">
+      <div className="relative w-full max-w-md bg-surface border border-surface-border rounded-3xl p-6 sm:p-8 shadow-2xl text-foreground">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-[#A3A3A3] hover:text-[#F5F5F4] p-1 rounded-lg hover:bg-[#101312] transition"
+          className="absolute top-5 right-5 text-muted hover:text-foreground p-1 rounded-lg hover:bg-background transition"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* MetaMask Header */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#101312] border border-[#28332D] flex items-center justify-center mb-4 shadow-inner">
+          <div className="w-16 h-16 rounded-2xl bg-background border border-surface-border flex items-center justify-center mb-4 shadow-inner">
             <svg className="w-10 h-10" viewBox="0 0 318.6 318.6" fill="none">
               <path d="M274.1 35.5L174.6 109.4L193 65.8L274.1 35.5Z" fill="#E2761B" stroke="#E2761B" strokeWidth="2" />
               <path d="M44.4 35.5L143.9 109.4L125.5 65.8L44.4 35.5Z" fill="#E4761B" stroke="#E4761B" strokeWidth="2" />
@@ -150,14 +150,14 @@ export default function MetaMaskModal({
             </svg>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#101312] border border-[#28332D] text-[#84CC16] text-xs font-mono mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-background border border-surface-border text-moss text-xs font-mono mb-2">
             <Lock className="w-3 h-3" /> Web3 Identity
           </div>
 
-          <h3 className="text-xl font-bold text-[#F5F5F4]">
+          <h3 className="text-xl font-bold text-foreground">
             {step === "role_conflict" ? "Role Conflict Detected" : `Sign in as ${roleTitle}`}
           </h3>
-          <p className="text-xs text-[#A3A3A3] mt-1 max-w-xs">
+          <p className="text-xs text-muted mt-1 max-w-xs">
             {step === "role_conflict"
               ? "Each wallet ID can only be registered as either a Client or a Freelancer."
               : "Connect your MetaMask wallet to authenticate your account."}
@@ -168,20 +168,20 @@ export default function MetaMaskModal({
         <div className="mt-6 space-y-4">
           {step === "connect" && (
             <>
-              <div className="p-3.5 rounded-xl bg-[#101312] border border-[#28332D] text-xs text-[#A3A3A3] space-y-2">
-                <div className="flex justify-between items-center text-[#F5F5F4]">
+              <div className="p-3.5 rounded-xl bg-background border border-surface-border text-xs text-muted space-y-2">
+                <div className="flex justify-between items-center text-foreground">
                   <span>Target Role:</span>
-                  <span className="font-mono text-[#84CC16] font-semibold">{roleTitle}</span>
+                  <span className="font-mono text-moss font-semibold">{roleTitle}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Policy:</span>
-                  <span className="font-mono text-[#A3A3A3]">1 Role per Wallet ID</span>
+                  <span className="font-mono text-muted">1 Role per Wallet ID</span>
                 </div>
               </div>
 
               <button
                 onClick={handleConnectWallet}
-                className="w-full py-3.5 px-4 rounded-xl font-semibold bg-[#84CC16] hover:bg-[#BEF264] text-[#101312] transition shadow-lg shadow-[#84CC16]/20 flex items-center justify-center gap-2 text-sm"
+                className="w-full py-3.5 px-4 rounded-xl font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-lg shadow-[#84CC16]/20 flex items-center justify-center gap-2 text-sm"
               >
                 <span>Connect MetaMask</span>
                 <ArrowRight className="w-4 h-4" />
@@ -191,11 +191,11 @@ export default function MetaMaskModal({
 
           {step === "signing" && (
             <div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
-              <Loader2 className="w-8 h-8 text-[#84CC16] animate-spin" />
-              <div className="text-sm font-semibold text-[#F5F5F4]">
+              <Loader2 className="w-8 h-8 text-moss animate-spin" />
+              <div className="text-sm font-semibold text-foreground">
                 Checking Wallet Identity...
               </div>
-              <p className="text-xs text-[#A3A3A3] max-w-xs">
+              <p className="text-xs text-muted max-w-xs">
                 Verifying single-role policy for this wallet address.
               </p>
             </div>
@@ -203,7 +203,7 @@ export default function MetaMaskModal({
 
           {/* ROLE CONFLICT SCREEN */}
           {step === "role_conflict" && (
-            <div className="p-4 rounded-2xl bg-[#101312] border border-[#EF4444]/40 text-center space-y-4">
+            <div className="p-4 rounded-2xl bg-background border border-[#EF4444]/40 text-center space-y-4">
               <div className="w-10 h-10 rounded-full bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444] flex items-center justify-center mx-auto">
                 <AlertCircle className="w-5 h-5" />
               </div>
@@ -212,16 +212,16 @@ export default function MetaMaskModal({
                 <div className="text-xs font-mono text-[#EF4444] font-bold">
                   Wallet Already Registered
                 </div>
-                <p className="text-xs text-[#A3A3A3] leading-relaxed">
-                  Address <span className="text-[#F5F5F4] font-mono font-bold">{account ? `${account.slice(0, 6)}...${account.slice(-4)}` : ""}</span> is already permanently assigned as a{" "}
-                  <span className="text-[#84CC16] font-bold uppercase">{existingRole}</span>. A wallet cannot be both.
+                <p className="text-xs text-muted leading-relaxed">
+                  Address <span className="text-foreground font-mono font-bold">{account ? `${account.slice(0, 6)}...${account.slice(-4)}` : ""}</span> is already permanently assigned as a{" "}
+                  <span className="text-moss font-bold uppercase">{existingRole}</span>. A wallet cannot be both.
                 </p>
               </div>
 
               <div className="pt-2 space-y-2">
                 <button
                   onClick={handleRedirectToExistingRole}
-                  className="w-full py-3 px-4 rounded-xl font-bold bg-[#84CC16] hover:bg-[#BEF264] text-[#101312] text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center gap-1.5"
+                  className="w-full py-3 px-4 rounded-xl font-bold bg-moss hover:bg-[#BEF264] text-background text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center gap-1.5"
                 >
                   <span>Go to {existingRole === "client" ? "Client" : "Freelancer"} Dashboard</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -232,7 +232,7 @@ export default function MetaMaskModal({
                     // Reset to connect state and advise switching account in MetaMask
                     setStep("connect");
                   }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#181D1A] hover:bg-[#222925] border border-[#28332D] text-xs text-[#A3A3A3] hover:text-[#F5F5F4] transition"
+                  className="w-full py-2.5 px-4 rounded-xl bg-surface hover:bg-surface-hover border border-surface-border text-xs text-muted hover:text-foreground transition"
                 >
                   Switch Wallet in MetaMask & Retry
                 </button>
@@ -245,13 +245,13 @@ export default function MetaMaskModal({
               <div className="w-12 h-12 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] flex items-center justify-center">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <div className="text-sm font-semibold text-[#F5F5F4]">
+              <div className="text-sm font-semibold text-foreground">
                 Authenticated as {roleTitle}!
               </div>
-              <div className="text-xs font-mono text-[#84CC16] bg-[#101312] px-3 py-1 rounded-md border border-[#28332D]">
+              <div className="text-xs font-mono text-moss bg-background px-3 py-1 rounded-md border border-surface-border">
                 {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : "Connected"}
               </div>
-              <p className="text-xs text-[#A3A3A3]">
+              <p className="text-xs text-muted">
                 Opening {roleTitle} Workspace...
               </p>
             </div>
@@ -265,7 +265,7 @@ export default function MetaMaskModal({
               </div>
               <button
                 onClick={handleConnectWallet}
-                className="w-full py-3 px-4 rounded-xl font-semibold bg-[#101312] hover:bg-[#84CC16] text-[#F5F5F4] hover:text-[#101312] border border-[#28332D] hover:border-[#84CC16] transition text-sm"
+                className="w-full py-3 px-4 rounded-xl font-semibold bg-background hover:bg-moss text-foreground hover:text-background border border-surface-border hover:border-moss transition text-sm"
               >
                 Try Again
               </button>

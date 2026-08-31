@@ -20,9 +20,9 @@ export default function SuperFeed() {
   return (
     <div className="space-y-8">
       {/* Recent Earners */}
-      <div className="bg-[#181D1A] rounded-3xl p-6 border border-white/5 shadow-lg">
-        <h3 className="text-lg font-bold text-[#F5F5F4] mb-6 flex items-center space-x-2">
-          <span className="w-2 h-2 rounded-full bg-[#84CC16] shadow-[0_0_8px_#84CC16]"></span>
+      <div className="bg-surface rounded-3xl p-6 border border-white/5 shadow-lg">
+        <h3 className="text-lg font-bold text-foreground mb-6 flex items-center space-x-2">
+          <span className="w-2 h-2 rounded-full bg-moss shadow-[0_0_8px_#84CC16]"></span>
           <span>Recent Earners</span>
         </h3>
         
@@ -41,10 +41,10 @@ export default function SuperFeed() {
               {recentEarners.map((earner, i) => (
                 <div key={`set1-${i}`} className="flex justify-between items-center group cursor-pointer interactive border-b border-white/5 pb-4 last:border-0 last:pb-0">
                   <div>
-                    <div className="text-[#F5F5F4] font-medium group-hover:text-[#BEF264] transition-colors">
+                    <div className="text-foreground font-medium group-hover:text-[#BEF264] transition-colors">
                       {earner.name}
                     </div>
-                    <div className="text-xs text-[#A3A3A3]">{earner.role}</div>
+                    <div className="text-xs text-muted">{earner.role}</div>
                   </div>
                   <div className="text-[#22C55E] font-bold">
                     {earner.amount}
@@ -57,10 +57,10 @@ export default function SuperFeed() {
               {recentEarners.map((earner, i) => (
                 <div key={`set2-${i}`} className="flex justify-between items-center group cursor-pointer interactive border-b border-white/5 pb-4 last:border-0 last:pb-0">
                   <div>
-                    <div className="text-[#F5F5F4] font-medium group-hover:text-[#BEF264] transition-colors">
+                    <div className="text-foreground font-medium group-hover:text-[#BEF264] transition-colors">
                       {earner.name}
                     </div>
-                    <div className="text-xs text-[#A3A3A3]">{earner.role}</div>
+                    <div className="text-xs text-muted">{earner.role}</div>
                   </div>
                   <div className="text-[#22C55E] font-bold">
                     {earner.amount}
@@ -73,18 +73,18 @@ export default function SuperFeed() {
       </div>
 
       {/* Hot Projects */}
-      <div className="bg-[#181D1A] rounded-3xl p-6 border border-white/5 shadow-lg">
-        <h3 className="text-lg font-bold text-[#F5F5F4] mb-6 flex items-center space-x-2">
+      <div className="bg-surface rounded-3xl p-6 border border-white/5 shadow-lg">
+        <h3 className="text-lg font-bold text-foreground mb-6 flex items-center space-x-2">
           <span className="w-2 h-2 rounded-full bg-[#F59E0B] shadow-[0_0_8px_#F59E0B] animate-pulse"></span>
           <span>Hot Projects</span>
         </h3>
         <div className="space-y-5">
           {hotProjects.map((project, i) => (
             <div key={i} className="group cursor-pointer interactive border-b border-white/5 pb-4 last:border-0 last:pb-0">
-              <div className="text-[#F5F5F4] font-medium group-hover:text-[#F59E0B] transition-colors mb-1">
+              <div className="text-foreground font-medium group-hover:text-[#F59E0B] transition-colors mb-1">
                 {project.name}
               </div>
-              <div className="flex justify-between text-xs text-[#A3A3A3]">
+              <div className="flex justify-between text-xs text-muted">
                 <span>{project.bids} Active Bids</span>
                 <span>{project.time}</span>
               </div>

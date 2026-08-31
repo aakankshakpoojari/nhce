@@ -4,11 +4,22 @@ import { motion } from "framer-motion";
 import EmptyState from "@/components/ui/EmptyState";
 import { useApplications } from "@/contexts/ApplicationContext";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function ApplicationsPage() {
   const { applications } = useApplications();
   const router = useRouter();
+  const [isPro, setIsPro] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const storedPro = localStorage.getItem("w3hire_is_pro");
+    if (storedPro === "true") {
+      setIsPro(true);
+    }
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -23,13 +34,47 @@ export default function ApplicationsPage() {
     show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] as const } }
   };
 
+  if (!isClient) return null;
+
+  if (!isPro) {
+    return (
+      <main className="flex-1 w-full mx-auto px-6 py-8 space-y-8">
+        <div className="flex flex-col items-start mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground mb-2">
+            My Applications
+          </h1>
+          <p className="text-xs text-muted">
+            Track the status of your submitted applications.
+          </p>
+        </div>
+
+        <div className="relative overflow-hidden rounded-2xl border border-surface-border bg-background p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#84CC16]/5 to-transparent pointer-events-none" />
+          <svg className="w-16 h-16 text-moss mb-6 drop-shadow-[0_0_15px_rgba(132,204,22,0.3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <h3 className="text-2xl font-bold text-foreground mb-3 tracking-tight">Pro Member Access Only</h3>
+          <p className="text-muted max-w-md mx-auto mb-8 text-sm leading-relaxed">
+            Unlimited applications and priority tracking is an exclusive feature for our verified Pro freelancers. Upgrade your account to unlock this directory.
+          </p>
+          <Link href="/pro" className="inline-flex items-center px-6 py-3 rounded-xl bg-moss hover:bg-[#65A30D] text-background font-bold text-sm transition-all shadow-[0_0_20px_rgba(132,204,22,0.2)] hover:shadow-[0_0_25px_rgba(132,204,22,0.4)]">
+            Upgrade to Pro
+            <svg className="w-4 h-4 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M5 12h14m-7-7 7 7-7 7"/>
+            </svg>
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-12 max-w-[1000px] mx-auto w-full pb-20">
+    <main className="flex-1 w-full mx-auto px-6 py-8 space-y-8">
       <div className="flex flex-col items-start mb-6">
-        <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold tracking-tighter text-[#F5F5F4] mb-4">
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground mb-2">
           My Applications
         </h1>
-        <p className="text-[#A3A3A3] text-xl font-light">
+        <p className="text-muted text-sm">
           Track the status of your submitted applications.
         </p>
       </div>
@@ -43,18 +88,17 @@ export default function ApplicationsPage() {
         {applications.length > 0 ? applications.map(app => (
           <motion.div key={app.id} variants={itemVariants}>
             <Link href={`/bounties/${app.bountyId}`} className="block group">
-              <div className="bg-[#181D1A] border border-white/5 hover:border-white/10 rounded-3xl p-6 md:p-8 transition-colors relative overflow-hidden">
-                <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none"></div>
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="bg-surface border border-surface-border hover:border-moss/50 rounded-2xl p-6 transition-colors">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <h3 className="text-xl md:text-2xl font-bold text-[#F5F5F4] group-hover:text-[#BEF264] transition-colors mb-2">{app.bountyTitle}</h3>
-                    <p className="text-sm text-[#A3A3A3]">Applied: {app.appliedAt}</p>
+                    <h3 className="text-base font-bold text-foreground group-hover:text-moss transition-colors mb-1">{app.bountyTitle}</h3>
+                    <p className="text-xs font-mono text-muted">Applied: {app.appliedAt}</p>
                   </div>
                   <div>
-                    <span className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${
-                      app.status === "Accepted" ? "bg-[#22C55E]/10 text-[#22C55E]" :
-                      app.status === "Pending Review" ? "bg-[#F59E0B]/10 text-[#F59E0B]" :
-                      "bg-white/5 text-[#A3A3A3]"
+                    <span className={`px-3 py-1 rounded-md text-[10px] font-mono font-semibold uppercase tracking-wider border ${
+                      app.status === "Accepted" ? "bg-moss/10 text-moss border-moss/30" :
+                      app.status === "Pending Review" ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30" :
+                      "bg-background text-muted border-surface-border"
                     }`}>
                       {app.status}
                     </span>
@@ -71,6 +115,6 @@ export default function ApplicationsPage() {
           />
         )}
       </motion.div>
-    </div>
+    </main>
   );
 }

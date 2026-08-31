@@ -29,10 +29,27 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} dark antialiased`}
     >
-      <body className="bg-[#101312] text-[#F5F5F4] antialiased min-h-screen relative selection:bg-[#84CC16] selection:text-[#101312]">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.getItem('w3hire_theme') === 'light') {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.dataset.theme = 'light';
+                } else {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.dataset.theme = 'dark';
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
+      </head>
+      <body className="bg-background text-foreground antialiased min-h-screen relative selection:bg-moss selection:text-background">
         {/* Universal Persistent Canvas Layer - Visible on ALL pages */}
         <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
-          <ParticleDrift />
+          <ParticleDrift mode="auto" />
         </div>
 
         {/* Dynamic App Route Pages with transparent background */}

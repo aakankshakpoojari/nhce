@@ -145,10 +145,10 @@ const PARTICLE_DRIFT_SOURCE = `<!doctype html>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
-<body class="bg-[#101312] min-h-screen flex items-center justify-center p-4 md:p-12 font-sans antialiased text-[#F5F5F4] overflow-x-hidden selection:bg-[#84CC16] selection:text-[#101312]">
+<body class="bg-background min-h-screen flex items-center justify-center p-4 md:p-12 font-sans antialiased text-foreground overflow-x-hidden selection:bg-moss selection:text-background">
 
     <div class="w-full max-w-[1440px]" style="display:inline-block; padding:1px; border-radius:24px;">
-        <div class="relative w-full flex flex-col md:flex-row overflow-hidden min-h-[600px] md:min-h-[650px]" style="background:#101312; border-radius:23px;">
+        <div class="relative w-full flex flex-col md:flex-row overflow-hidden min-h-[600px] md:min-h-[650px]" style="background:transparent; border-radius:23px;">
             <canvas id="particle-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-100"></canvas>
             <div class="absolute inset-0 opacity-[0.10] mix-blend-overlay pointer-events-none z-10" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
         </div>
@@ -284,7 +284,7 @@ const PARTICLE_DRIFT_DEFINITION: EffectDefinition = {
   title: "Particle Drift",
   source: PARTICLE_DRIFT_SOURCE,
   supportsMode: true,
-  background: (mode) => (mode === "light" ? LIGHT_PAPER : "#101312"),
+  background: () => "transparent",
   targets: [{ selector: "#particle-canvas", role: "background" }],
   patch(source, { size, length, density, mode }) {
     const link = Math.round(110 * length);

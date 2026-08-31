@@ -21,23 +21,23 @@ interface EscrowCardProps {
 
 export default function EscrowCard({ escrow, onRelease }: EscrowCardProps) {
   return (
-    <div className="p-5 rounded-2xl bg-[#181D1A] border border-[#28332D] hover:border-[#84CC16]/40 transition space-y-4">
+    <div className="p-5 rounded-2xl bg-surface border border-surface-border hover:border-moss/40 transition space-y-4">
       {/* Top Header */}
-      <div className="flex items-center justify-between border-b border-[#28332D] pb-3">
+      <div className="flex items-center justify-between border-b border-surface-border pb-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#101312] border border-[#28332D] flex items-center justify-center font-bold text-xs text-[#84CC16]">
+          <div className="w-8 h-8 rounded-lg bg-background border border-surface-border flex items-center justify-center font-bold text-xs text-moss">
             {escrow.freelancerAvatar}
           </div>
           <div>
-            <div className="font-bold text-xs text-[#F5F5F4]">{escrow.projectTitle}</div>
-            <div className="text-[11px] text-[#A3A3A3]">Freelancer: {escrow.freelancerName}</div>
+            <div className="font-bold text-xs text-foreground">{escrow.projectTitle}</div>
+            <div className="text-[11px] text-muted">Freelancer: {escrow.freelancerName}</div>
           </div>
         </div>
 
         {/* Status Badge */}
         <div>
           {escrow.status === "locked" && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#101312] border border-[#28332D] text-[#84CC16] text-[10px] font-mono">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-background border border-surface-border text-moss text-[10px] font-mono">
               <Lock className="w-3 h-3" /> Locked in Vault
             </span>
           )}
@@ -57,14 +57,14 @@ export default function EscrowCard({ escrow, onRelease }: EscrowCardProps) {
       {/* Amount & On-Chain Info */}
       <div className="flex items-center justify-between text-xs font-mono">
         <div>
-          <span className="text-[#A3A3A3] block text-[10px]">Escrow Value</span>
-          <span className="text-sm font-bold text-[#F5F5F4]">${escrow.amountUSD}</span>
-          <span className="text-[11px] text-[#A3A3A3] ml-2">₹{escrow.amountINR.toLocaleString("en-IN")}</span>
+          <span className="text-muted block text-[10px]">Escrow Value</span>
+          <span className="text-sm font-bold text-foreground">${escrow.amountUSD}</span>
+          <span className="text-[11px] text-muted ml-2">₹{escrow.amountINR.toLocaleString("en-IN")}</span>
         </div>
 
         <div className="text-right">
-          <span className="text-[#A3A3A3] block text-[10px]">Contract Tx</span>
-          <span className="text-[#84CC16] font-mono text-[11px] flex items-center gap-1">
+          <span className="text-muted block text-[10px]">Contract Tx</span>
+          <span className="text-moss font-mono text-[11px] flex items-center gap-1">
             {escrow.txHash} <ExternalLink className="w-3 h-3" />
           </span>
         </div>
@@ -75,7 +75,7 @@ export default function EscrowCard({ escrow, onRelease }: EscrowCardProps) {
         <div className="pt-2">
           <button
             onClick={() => onRelease(escrow.id)}
-            className="w-full py-2.5 rounded-xl bg-[#22C55E] hover:bg-[#84CC16] text-[#101312] font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-[#22C55E]/20"
+            className="w-full py-2.5 rounded-xl bg-[#22C55E] hover:bg-moss text-background font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-[#22C55E]/20"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>Approve & Release Funds to {escrow.freelancerName}</span>

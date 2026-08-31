@@ -34,7 +34,7 @@ export default function NotificationPanel({ onClose }: { onClose: () => void }) 
   const getIcon = (type: string) => {
     switch (type) {
       case 'milestone':
-        return <div className="w-8 h-8 rounded-full bg-[#84CC16]/20 flex items-center justify-center text-[#84CC16] font-bold">M</div>;
+        return <div className="w-8 h-8 rounded-full bg-moss/20 flex items-center justify-center text-moss font-bold">M</div>;
       case 'proposal':
         return <div className="w-8 h-8 rounded-full bg-[#22C55E]/20 flex items-center justify-center text-[#22C55E] font-bold">P</div>;
       case 'message':
@@ -50,13 +50,13 @@ export default function NotificationPanel({ onClose }: { onClose: () => void }) 
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="absolute top-16 right-8 w-96 bg-[#181D1A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-3xl"
+      className="absolute top-16 right-8 w-96 bg-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-3xl"
     >
-      <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#101312]/80">
-        <h3 className="font-semibold text-[#F5F5F4] flex items-center gap-2">
+      <div className="p-4 border-b border-white/5 flex items-center justify-between bg-background/80">
+        <h3 className="font-semibold text-foreground flex items-center gap-2">
           Notifications
           {unreadCount > 0 && (
-            <span className="bg-[#84CC16] text-[#101312] text-xs font-bold px-2 py-0.5 rounded-full">
+            <span className="bg-moss text-background text-xs font-bold px-2 py-0.5 rounded-full">
               {unreadCount}
             </span>
           )}
@@ -65,12 +65,12 @@ export default function NotificationPanel({ onClose }: { onClose: () => void }) 
           {unreadCount > 0 && (
             <button 
               onClick={markAllAsRead}
-              className="text-xs text-[#A3A3A3] hover:text-[#F5F5F4] transition-colors"
+              className="text-xs text-muted hover:text-foreground transition-colors"
             >
               Mark all read
             </button>
           )}
-          <button onClick={onClose} className="text-[#A3A3A3] hover:text-[#F5F5F4] transition-colors">
+          <button onClick={onClose} className="text-muted hover:text-foreground transition-colors">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
@@ -79,7 +79,7 @@ export default function NotificationPanel({ onClose }: { onClose: () => void }) 
       <div className="max-h-[400px] overflow-y-auto">
         <AnimatePresence>
           {notifications.length === 0 ? (
-            <div className="p-8 text-center text-[#A3A3A3] text-sm">
+            <div className="p-8 text-center text-muted text-sm">
               No notifications yet.
             </div>
           ) : (
@@ -99,15 +99,15 @@ export default function NotificationPanel({ onClose }: { onClose: () => void }) 
                   {getIcon(notification.type)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${notification.isRead ? 'text-[#A3A3A3]' : 'text-[#F5F5F4] font-medium'}`}>
+                  <p className={`text-sm ${notification.isRead ? 'text-muted' : 'text-foreground font-medium'}`}>
                     {notification.message}
                   </p>
-                  <p className="text-xs text-[#A3A3A3] mt-1.5">{notification.time}</p>
+                  <p className="text-xs text-muted mt-1.5">{notification.time}</p>
                 </div>
                 {!notification.isRead && (
                   <button 
                     onClick={(e) => markAsRead(notification.id, e)}
-                    className="flex-shrink-0 self-start text-[#A3A3A3] hover:text-[#84CC16] transition-colors p-1"
+                    className="flex-shrink-0 self-start text-muted hover:text-moss transition-colors p-1"
                     title="Mark as read"
                   >
                     <CheckCircleIcon className="w-5 h-5" />
@@ -120,8 +120,8 @@ export default function NotificationPanel({ onClose }: { onClose: () => void }) 
       </div>
       
       {notifications.length > 0 && (
-        <div className="p-3 border-t border-white/5 bg-[#101312]/80 text-center">
-          <button className="text-sm font-medium text-[#84CC16] hover:text-[#BEF264] transition-colors">
+        <div className="p-3 border-t border-white/5 bg-background/80 text-center">
+          <button className="text-sm font-medium text-moss hover:text-[#BEF264] transition-colors">
             View all history
           </button>
         </div>
