@@ -9,12 +9,36 @@
   --color-surface-border: #28332D;
   --color-moss: #84CC16;
   --color-moss-hover: #65A30D;
+  --color-emerald: #22C55E;
   --color-emerald-brand: #22C55E;
+  --color-lime: #BEF264;
   --color-softlime: #BEF264;
+  --color-off-white: #F5F5F4;
   --color-offwhite: #F5F5F4;
+  --color-muted: #A3A3A3;
   --color-mutedgray: #A3A3A3;
+  --color-warning: #F59E0B;
   --color-warning-amber: #F59E0B;
+  --color-error: #EF4444;
   --color-error-red: #EF4444;
+
+  --color-background: var(--color-charcoal);
+  --color-foreground: var(--color-off-white);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --ease-fluid: cubic-bezier(0.25, 1, 0.5, 1);
+  --animate-float: float 6s ease-in-out infinite;
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
 }
 
 :root {
@@ -44,6 +68,8 @@ body {
   color: #F5F5F4;
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* 3D Box Loader styles */
@@ -176,4 +202,10 @@ body {
 }
 .transform-style-3d {
   transform-style: preserve-3d;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
 }
