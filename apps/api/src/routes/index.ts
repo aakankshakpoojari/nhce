@@ -1,0 +1,26 @@
+/**
+ * @file index.ts
+ * @description Master Express API Router Index.
+ * Aggregates all modular route handlers under unified API endpoints.
+ */
+
+import { Router } from 'express';
+import authRoutes from './auth.routes';
+import jobRoutes from './job.routes';
+import milestoneRoutes from './milestone.routes';
+import swapRoutes from './swap.routes';
+import subscriptionRoutes from './subscription.routes';
+import disputeRoutes from './dispute.routes';
+import webhookRoutes from './webhook.routes';
+
+const router = Router();
+
+router.use('/auth', authRoutes);
+router.use('/jobs', jobRoutes);
+router.use('/milestones', milestoneRoutes);
+router.use('/swap', swapRoutes);
+router.use('/subscription', subscriptionRoutes);
+router.use('/disputes', disputeRoutes);
+router.use('/webhooks', webhookRoutes);
+
+export default router;
