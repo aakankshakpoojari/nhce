@@ -42,69 +42,56 @@ export default function ClientNavbar({
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <header className="sticky top-0 z-40 px-6 py-3.5 border-b border-surface-border bg-surface/95 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-6 sm:px-8">
+      <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Left: Brand + Client Portal Identifier + Freelancer Switcher */}
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-background border border-surface-border flex items-center justify-center font-black text-sm">
-              <span className="text-foreground">W</span>
-              <span className="text-moss">3</span>
-            </div>
-            <span className="font-extrabold text-lg text-foreground tracking-tight">
-              W<span className="text-moss">3</span>HIRE
-            </span>
+        <div className="flex items-center gap-6 flex-shrink-0">
+          <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive flex items-center gap-2">
+            W3HIRE
           </Link>
-
-          <span className="text-surface-border font-mono">/</span>
-
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-background border border-surface-border text-xs font-mono text-moss">
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>CLIENT WORKSPACE</span>
-          </div>
 
           <Link
             href="/bounties"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-background hover:bg-surface-hover border border-surface-border text-xs font-semibold text-[#22C55E] transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface hover:bg-surface-hover border border-surface-border text-xs font-semibold text-moss transition-colors"
           >
             <UserCheck className="w-3.5 h-3.5" />
-            <span>Freelancer Portal</span>
+            <span>Switch to Freelancer Portal</span>
           </Link>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-muted">
-          <Link href="/client" className="text-foreground hover:text-moss transition">
+        <nav className="hidden lg:flex items-center justify-center space-x-8 flex-1">
+          <Link href="/client" className="text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center">
             Overview & Projects
           </Link>
-          <Link href="/client/freelancers" className="hover:text-moss transition">
+          <Link href="/client/freelancers" className="text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center">
             Browse Talent
           </Link>
-          <Link href="/client/escrows" className="hover:text-moss transition">
+          <Link href="/client/escrows" className="text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center">
             Escrow Vaults
           </Link>
         </nav>
 
         {/* Right: Credits Badge, Notifications, Post Project & Wallet */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
           
           <ThemeToggle />
 
           {/* Monthly Credits Pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-surface-border text-xs">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surface-border text-xs font-semibold">
             <div className="flex items-center gap-1.5">
-              <Zap className={`w-3.5 h-3.5 ${creditsRemaining > 0 ? "text-moss" : "text-[#EF4444]"}`} />
-              <span className="font-mono font-semibold text-foreground">
-                {isPro ? "PRO Unlimited" : `${creditsRemaining}/${maxCredits} Free Credits`}
+              <Zap className={`w-3.5 h-3.5 ${creditsRemaining > 0 ? "text-[#BEF264]" : "text-[#EF4444]"}`} />
+              <span className="font-mono text-foreground">
+                {isPro ? "PRO Unlimited" : `${creditsRemaining}/${maxCredits} Credits`}
               </span>
             </div>
             {!isPro && (
               <button
                 onClick={onUpgradeProClick}
-                className="text-[11px] font-mono text-[#BEF264] hover:underline flex items-center gap-1 pl-1 border-l border-surface-border"
+                className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#BEF264]/10 text-[#BEF264] border border-[#BEF264]/20 hover:bg-[#BEF264]/20 transition-colors ml-1"
               >
-                Upgrade Pro
+                Upgrade
               </button>
             )}
           </div>
@@ -116,14 +103,12 @@ export default function ClientNavbar({
                 setShowNotifications(!showNotifications);
                 if (unreadCount > 0) onMarkNotificationsRead();
               }}
-              className="relative p-2 rounded-xl bg-background hover:bg-surface-hover border border-surface-border text-foreground transition"
+              className="relative p-2 text-[var(--color-muted)] hover:text-[#BEF264] transition-colors duration-300 interactive"
               title="Notifications"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="h-6 w-6" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-moss text-background font-mono font-bold text-[10px] flex items-center justify-center animate-pulse">
-                  {unreadCount}
-                </span>
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#F59E0B] shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
               )}
             </button>
 
@@ -170,27 +155,32 @@ export default function ClientNavbar({
             )}
           </div>
 
-          {/* Post New Project Button */}
-          <button
-            onClick={onPostProjectClick}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-md shadow-[#84CC16]/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Post Work</span>
-          </button>
+          <div className="flex items-center gap-2 pl-2 border-l border-surface-border">
+            {/* Connected Wallet Pill */}
+            {user?.walletAddress ? (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surface-border text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-[#BEF264] shadow-[0_0_6px_rgba(190,242,100,0.8)]" />
+                <span className="font-mono">{`${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`}</span>
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-moss/10 text-moss border border-moss/20">
+                  Client
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono text-amber-400">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>No Wallet</span>
+              </div>
+            )}
 
-          {/* Connected Wallet Pill */}
-          {user?.walletAddress ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-surface-border text-xs font-mono text-moss">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-              <span>{`${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono text-amber-400">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span>No Wallet</span>
-            </div>
-          )}
+            {/* Post New Project Button */}
+            <button
+              onClick={onPostProjectClick}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-sm flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Post Work</span>
+            </button>
+          </div>
 
         </div>
       </div>
