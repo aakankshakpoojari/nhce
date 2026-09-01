@@ -15,7 +15,7 @@ import {
   CreditCard,
   UserCheck,
 } from "lucide-react";
-
+import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface ClientNavbarProps {
@@ -37,6 +37,7 @@ export default function ClientNavbar({
   notifications,
   onMarkNotificationsRead,
 }: ClientNavbarProps) {
+  const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -44,7 +45,7 @@ export default function ClientNavbar({
     <header className="sticky top-0 z-40 px-6 py-3.5 border-b border-surface-border bg-surface/95 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
-        {/* Left: Brand + Client Portal Identifier */}
+        {/* Left: Brand + Client Portal Identifier + Freelancer Switcher */}
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-lg bg-background border border-surface-border flex items-center justify-center font-black text-sm">
@@ -62,6 +63,14 @@ export default function ClientNavbar({
             <Briefcase className="w-3.5 h-3.5" />
             <span>CLIENT WORKSPACE</span>
           </div>
+
+          <Link
+            href="/bounties"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-background hover:bg-surface-hover border border-surface-border text-xs font-semibold text-[#22C55E] transition-colors"
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            <span>Freelancer Portal</span>
+          </Link>
         </div>
 
         {/* Navigation Tabs */}
@@ -171,13 +180,21 @@ export default function ClientNavbar({
           </button>
 
           {/* Connected Wallet Pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-surface-border text-xs font-mono text-moss">
-            <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-            <span>0x71C...949A</span>
-          </div>
+          {user?.walletAddress ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-surface-border text-xs font-mono text-moss">
+              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+              <span>{`${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono text-amber-400">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>No Wallet</span>
+            </div>
+          )}
 
         </div>
       </div>
     </header>
   );
 }
+
