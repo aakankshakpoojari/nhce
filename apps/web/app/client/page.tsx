@@ -25,6 +25,7 @@ import PostProjectModal from "./components/PostProjectModal";
 import UpgradeProModal from "./components/UpgradeProModal";
 import ApplicantsModal, { Applicant } from "./components/ApplicantsModal";
 import EscrowCard, { EscrowItem } from "./components/EscrowCard";
+import WalletNoticeBanner from "@/components/ui/WalletNoticeBanner";
 
 export interface Project {
   id: string;
@@ -180,6 +181,7 @@ export default function ClientDashboardPage() {
             ? {
                 ...p,
                 applicants: [
+                  ...p.applicants,
                   {
                     id: `app-${Date.now()}`,
                     name: applicantName,
@@ -191,18 +193,16 @@ export default function ClientDashboardPage() {
                     skills: newProj.skills.length > 0 ? newProj.skills : ["Solidity", "Security"],
                     proposedUSD: newProj.budgetUSD,
                     proposedINR: newProj.budgetINR,
-                    proposal:
-                      "I have extensive experience in this exact domain. Ready to begin immediately and commit milestone deliveries on-chain.",
+                    proposal: "I specialize in high-throughput Web3 protocols and escrow smart contracts. Ready to start immediately.",
                     githubUrl: "https://github.com",
                     portfolioUrl: "https://portfolio.dev",
                   },
+
                 ],
               }
             : p
         );
-        if (typeof window !== "undefined") {
-          localStorage.setItem("w3hire_client_projects", JSON.stringify(next));
-        }
+        saveProjectsToStorage(next);
         return next;
       });
     }, 2500);
@@ -281,6 +281,9 @@ export default function ClientDashboardPage() {
 
       {/* Main Dashboard Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-8">
+        
+        {/* Wallet Notice Prompt */}
+        <WalletNoticeBanner role="client" />
         
         {/* Monthly Credits & Pro Banner */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">

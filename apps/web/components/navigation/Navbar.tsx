@@ -3,13 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BellIcon } from "@heroicons/react/24/outline";
-
+import { useAuth } from "@/contexts/AuthContext";
+import AuthModal from "@/components/auth/AuthModal";
 import NotificationPanel from "@/components/notifications/NotificationPanel";
 import { AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Briefcase, UserCheck, LogOut, User as UserIcon } from "lucide-react";
 
 export default function Navbar() {
+  const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
 
   const navLinks = [
     { name: "Marketplace", href: "/bounties" },
@@ -23,53 +28,111 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-8">
-      {/* Left: Logo */}
-      <div className="flex-shrink-0">
-        <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive">
-          W3HIRE
-        </Link>
-      </div>
-
-      {/* Center: Routing */}
-      <div className="hidden md:flex items-center justify-center space-x-10 flex-1">
-        {navLinks.map((link) => (
-          <Link
-            key={link.name}
-            href={link.href}
-            className={`text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center ${
-              link.isPremium ? "text-[#BEF264]" : ""
-            }`}
-          >
-            {link.name}
-            {link.isPremium && (
-              <span className="ml-1.5 h-2 w-2 rounded-full bg-[#BEF264] shadow-[0_0_6px_rgba(190,242,100,0.8)]"></span>
-            )}
+    <>
+      <nav className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-6 sm:px-8">
+        {/* Left: Logo */}
+        <div className="flex items-center gap-6 flex-shrink-0">
+          <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive">
+            W3HIRE
           </Link>
-        ))}
-      </div>
 
-      {/* Right: Notifications & Role Toggle */}
-      <div className="flex items-center space-x-4 md:space-x-8 flex-shrink-0">
-
-        <ThemeToggle />
-        {/* Notifications */}
-        <div className="relative">
-          <button 
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 text-[var(--color-muted)] hover:text-[#BEF264] transition-colors duration-300 interactive"
+          {/* Quick Portal Switcher */}
+          <Link
+            href="/client"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface hover:bg-surface-hover border border-surface-border text-xs font-semibold text-moss transition-colors"
           >
-            <BellIcon className="h-6 w-6" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#F59E0B] shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
-          </button>
-
-          <AnimatePresence>
-            {showNotifications && (
-              <NotificationPanel onClose={() => setShowNotifications(false)} />
-            )}
-          </AnimatePresence>
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>Switch to Client Portal</span>
+          </Link>
         </div>
-      </div>
-    </nav>
+
+        {/* Center: Routing */}
+        <div className="hidden lg:flex items-center justify-center space-x-8 flex-1">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={`text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center ${
+                link.isPremium ? "text-[#BEF264]" : ""
+              }`}
+            >
+              {link.name}
+              {link.isPremium && (
+                <span className="ml-1.5 h-2 w-2 rounded-full bg-[#BEF264] shadow-[0_0_6px_rgba(190,242,100,0.8)]"></span>
+              )}
+            </Link>
+          ))}
+        </div>
+
+        {/* Right: Notifications & User Auth */}
+        <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
+          <ThemeToggle />
+
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-[var(--color-muted)] hover:text-[#BEF264] transition-colors duration-300 interactive"
+            >
+              <BellIcon className="h-6 w-6" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#F59E0B] shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
+            </button>
+
+            <AnimatePresence>
+              {showNotifications && (
+                <NotificationPanel onClose={() => setShowNotifications(false)} />
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* User Auth Section */}
+          {user ? (
+            <div className="flex items-center gap-2 pl-2 border-l border-surface-border">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surface-border text-xs font-semibold">
+                <UserIcon className="w-3.5 h-3.5 text-moss" />
+                <span className="hidden sm:inline font-mono">{user.name || user.email.split("@")[0]}</span>
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-moss/10 text-moss border border-moss/20">
+                  {user.role}
+                </span>
+              </div>
+              <button
+                onClick={logout}
+                title="Sign Out"
+                className="p-2 rounded-xl bg-surface hover:bg-red-950/30 text-muted hover:text-red-400 border border-surface-border transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setAuthMode("signin");
+                  setIsAuthModalOpen(true);
+                }}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setAuthMode("signup");
+                  setIsAuthModalOpen(true);
+                }}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-sm"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authMode}
+      />
+    </>
   );
 }
