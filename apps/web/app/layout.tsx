@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ParticleDrift from "@/components/ui/particle-drift";
+import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,16 +48,18 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-background text-foreground antialiased min-h-screen relative selection:bg-moss selection:text-background">
-        {/* Universal Persistent Canvas Layer - Visible on ALL pages */}
-        <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
-          <ParticleDrift mode="auto" />
-        </div>
+        <AuthProvider>
+          {/* Universal Persistent Canvas Layer - Visible on ALL pages */}
+          <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
+            <ParticleDrift mode="auto" />
+          </div>
 
-        {/* Dynamic App Route Pages with transparent background */}
-        <div className="relative z-10 flex flex-col min-h-screen bg-transparent">
-          {children}
-        </div>
+          {/* Dynamic App Route Pages with transparent background */}
+          <div className="relative z-10 flex flex-col min-h-screen bg-transparent">
+            {children}
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
-}
+}

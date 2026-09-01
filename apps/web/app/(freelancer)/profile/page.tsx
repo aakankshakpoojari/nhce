@@ -3,9 +3,9 @@
 import { freelancerStats } from "@/lib/mock-data";
 import { StarIcon } from "@heroicons/react/20/solid";
 import { CheckBadgeIcon } from "@heroicons/react/24/outline";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import WalletNoticeBanner from "@/components/ui/WalletNoticeBanner";
 
 export default function ProfilePage() {
   const [isPro, setIsPro] = useState(false);
@@ -23,6 +23,8 @@ export default function ProfilePage() {
   if (!isPro) {
     return (
       <main className="flex-1 w-full mx-auto px-6 py-8 space-y-8">
+        <WalletNoticeBanner role="freelancer" />
+
         <div className="flex flex-col items-start mb-6">
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground mb-2">
             Decentralized Identity (DID)
@@ -54,6 +56,8 @@ export default function ProfilePage() {
 
   return (
     <main className="flex-1 w-full mx-auto px-6 py-8 space-y-8">
+      <WalletNoticeBanner role="freelancer" />
+
       <div className="flex flex-col items-start mb-6">
         <h1 className="text-3xl font-extrabold tracking-tight text-foreground mb-2">
           Decentralized Identity (DID)
@@ -62,6 +66,7 @@ export default function ProfilePage() {
           Manage your on-chain reputation and verified credentials.
         </p>
       </div>
+
 
       <div className="bg-surface border border-surface-border rounded-2xl p-8 space-y-8 text-left">
         <div className="flex items-center space-x-8 mb-8 pb-8 border-b border-surface-border">

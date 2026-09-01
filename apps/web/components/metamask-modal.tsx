@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, CheckCircle2, AlertCircle, ArrowRight, X, Loader2, UserCheck, Briefcase } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MetaMaskModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export default function MetaMaskModal({
   onSuccess,
 }: MetaMaskModalProps) {
   const router = useRouter();
+  const { user, connectWallet } = useAuth();
   const [step, setStep] = useState<"connect" | "signing" | "success" | "role_conflict" | "error">("connect");
   const [account, setAccount] = useState<string | null>(null);
   const [existingRole, setExistingRole] = useState<"client" | "freelancer" | null>(null);
@@ -63,36 +65,29 @@ export default function MetaMaskModal({
 
       const normalizedAddress = userAddress.toLowerCase();
 
-      // Check if wallet is already bound to a different role
-      if (typeof window !== "undefined") {
-        const savedRole = localStorage.getItem(`w3hire_wallet_role_${normalizedAddress}`) as "client" | "freelancer" | null;
+      // Validate wallet connection & role uniqueness via AuthContext
+      const res = await connectWallet(normalizedAddress);
 
-        if (savedRole && savedRole !== role) {
-          // ROLE CONFLICT: Cannot be both
-          setAccount(userAddress);
-          setExistingRole(savedRole);
-          setStep("role_conflict");
-          return;
+      if (!res.success) {
+        setAccount(userAddress);
+        setErrorMessage(res.error || "Wallet is already linked to another account or role conflict detected.");
+        setExistingRole(role === "client" ? "freelancer" : "client");
+        setStep("role_conflict");
+        return;
+      }
+
+      // Optional signature for real MetaMask
+      if (typeof window !== "undefined" && (window as any).ethereum) {
+        const eth = (window as any).ethereum;
+        const message = `Welcome to W3HIRE!\n\nAuthenticate as: ${roleTitle}\nWallet: ${userAddress}\nRole binding: permanent 1-account-1-role policy.\nNonce: ${Math.floor(Math.random() * 1000000)}`;
+        try {
+          await eth.request({
+            method: "personal_sign",
+            params: [message, userAddress],
+          });
+        } catch (signErr: any) {
+          console.warn("Signature skipped:", signErr);
         }
-
-        // Request signature if real metamask
-        if (typeof window !== "undefined" && (window as any).ethereum) {
-          const eth = (window as any).ethereum;
-          const message = `Welcome to W3HIRE!\n\nAuthenticate as: ${roleTitle}\nWallet: ${userAddress}\nRole binding: permanent 1-account-1-role policy.\nNonce: ${Math.floor(Math.random() * 1000000)}`;
-          try {
-            await eth.request({
-              method: "personal_sign",
-              params: [message, userAddress],
-            });
-          } catch (signErr: any) {
-            console.warn("Signature skipped:", signErr);
-          }
-        }
-
-        // Register / bind role permanently
-        localStorage.setItem(`w3hire_wallet_role_${normalizedAddress}`, role);
-        localStorage.setItem("w3hire_active_address", userAddress);
-        localStorage.setItem("w3hire_active_role", role);
       }
 
       setAccount(userAddress);
@@ -111,6 +106,7 @@ export default function MetaMaskModal({
       setStep("error");
     }
   };
+
 
   const handleRedirectToExistingRole = () => {
     if (!existingRole) return;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Lock,
   ArrowRight,
@@ -10,15 +11,24 @@ import {
   CheckCircle2,
   Sparkles,
   ChevronDown,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import MetaMaskModal from "@/components/metamask-modal";
+import AuthModal from "@/components/auth/AuthModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LandingPage() {
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [scrollY, setScrollY] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [selectedRole, setSelectedRole] = useState<"client" | "freelancer" | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [connectedAccount, setConnectedAccount] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authInitialRole, setAuthInitialRole] = useState<"CLIENT" | "FREELANCER">("FREELANCER");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [isThreeHovered, setIsThreeHovered] = useState(false);
 
   // Intro spin state (scroll is locked until 360 spin finishes)
   const [isIntroSpinning, setIsIntroSpinning] = useState(true);
@@ -98,10 +108,19 @@ export default function LandingPage() {
     ? introRotation
     : (introRotation + scrollY * 0.9) % 360;
 
+  const handleRoleAuth = (role: "client" | "freelancer") => {
+    setAuthInitialRole(role === "client" ? "CLIENT" : "FREELANCER");
+    setAuthMode("signin");
+    setIsAuthModalOpen(true);
+  };
+
   const handleRoleSelect = (role: "client" | "freelancer") => {
     setSelectedRole(role);
-    setIsModalOpen(true);
+    setAuthInitialRole(role === "client" ? "CLIENT" : "FREELANCER");
+    setAuthMode("signin");
+    setIsAuthModalOpen(true);
   };
+
 
   return (
     <div
@@ -118,26 +137,30 @@ export default function LandingPage() {
             : "border-b border-transparent bg-transparent"
         }`}
       >
-        {/* Brand Logo with 3D Spinning '3' */}
+        {/* Brand Logo with 3D Spinning '3' or '$' on hover */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-xl bg-surface border border-surface-border flex items-center justify-center group-hover:border-moss/60 transition-colors shadow-md">
             <div className="flex items-center font-black text-lg">
               <span className="text-foreground">W</span>
               <div
-                className="inline-block transform-style-3d text-moss transition-transform duration-75"
+                onMouseEnter={() => setIsThreeHovered(true)}
+                onMouseLeave={() => setIsThreeHovered(false)}
+                className="inline-block transform-style-3d text-moss transition-transform duration-75 cursor-pointer"
                 style={{ transform: `rotateY(${activeRotation}deg)` }}
               >
-                3
+                {isThreeHovered ? "$" : "3"}
               </div>
             </div>
           </div>
           <span className="font-extrabold text-xl tracking-tight text-foreground flex items-center">
             W
             <span
-              className="inline-block text-moss transform-style-3d transition-transform duration-75 font-mono"
+              onMouseEnter={() => setIsThreeHovered(true)}
+              onMouseLeave={() => setIsThreeHovered(false)}
+              className="inline-block text-moss transform-style-3d transition-transform duration-75 font-mono cursor-pointer"
               style={{ transform: `rotateY(${activeRotation}deg)` }}
             >
-              3
+              {isThreeHovered ? "$" : "3"}
             </span>
             HIRE
           </span>
@@ -145,33 +168,54 @@ export default function LandingPage() {
 
         {/* Minimal Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted">
-          <a href="#portals" className="hover:text-moss transition-colors">
-            Get Started
-          </a>
+          <Link href="/bounties" className="hover:text-moss transition-colors">
+            Freelancer Portal
+          </Link>
+          <Link href="/client" className="hover:text-moss transition-colors">
+            Client Portal
+          </Link>
           <a href="#how-it-works" className="hover:text-moss transition-colors">
             How It Works
           </a>
         </nav>
 
-        {/* Single Wallet Action Button */}
+        {/* Auth / Account Controls */}
         <div>
-          {connectedAccount ? (
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-surface-border text-xs font-mono text-moss">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-              <span>{`${connectedAccount.slice(0, 6)}...${connectedAccount.slice(-4)}`}</span>
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-surface-border text-xs font-mono text-moss">
+                <UserIcon className="w-3.5 h-3.5" />
+                <span>{user.name || user.email.split("@")[0]}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="p-1.5 rounded-full bg-surface hover:bg-surface-hover text-muted hover:text-foreground border border-surface-border transition"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           ) : (
-            <button
-              onClick={() => handleRoleSelect("client")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-surface hover:bg-moss text-foreground hover:text-background border border-surface-border hover:border-moss transition-all shadow-md group"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 318.6 318.6" fill="none">
-                <path d="M274.1 35.5L174.6 109.4L193 65.8L274.1 35.5Z" fill="#E2761B" />
-                <path d="M44.4 35.5L143.9 109.4L125.5 65.8L44.4 35.5Z" fill="#E4761B" />
-                <path d="M159.3 190.1L144.1 164.6L140.6 230.9L159.3 221.7L177.9 230.9L174.5 164.6L159.3 190.1Z" fill="#E4751F" />
-              </svg>
-              <span>Connect Wallet</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setAuthMode("signin");
+                  setIsAuthModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition shadow-md"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setAuthMode("signup");
+                  setIsAuthModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-md"
+              >
+                Sign Up
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -182,7 +226,7 @@ export default function LandingPage() {
           
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-moss/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-          {/* 3D Spinning Brand Heading (Controlled by initial spin, then scroll) */}
+          {/* 3D Spinning Brand Heading (Hovering "3" transforms it to "$") */}
           <div
             className="perspective-1000 my-2 transition-transform duration-150 ease-out"
             style={{
@@ -192,17 +236,20 @@ export default function LandingPage() {
             <h1 className="text-7xl sm:text-8xl md:text-9xl font-black tracking-tighter text-foreground flex items-center justify-center select-none leading-none">
               <span>W</span>
               <span
-                className="inline-block text-moss transform-style-3d cursor-pointer mx-1 transition-transform duration-75"
+                onMouseEnter={() => setIsThreeHovered(true)}
+                onMouseLeave={() => setIsThreeHovered(false)}
+                className="inline-block text-moss transform-style-3d cursor-pointer mx-1 transition-all duration-150 hover:scale-110"
                 style={{
                   transform: `rotateY(${activeRotation}deg)`,
                   filter: "drop-shadow(0 0 35px rgba(132, 204, 22, 0.45))",
                 }}
               >
-                3
+                {isThreeHovered ? "$" : "3"}
               </span>
               <span>HIRE</span>
             </h1>
           </div>
+
 
           <p className="mt-8 text-xl sm:text-2xl text-foreground font-medium max-w-xl leading-snug">
             Work on-chain. Get paid instantly. No middlemen.
@@ -414,8 +461,16 @@ export default function LandingPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         role={selectedRole}
-        onSuccess={(acc) => setConnectedAccount(acc)}
+      />
+
+      {/* JWT Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialRole={authInitialRole}
+        initialMode={authMode}
       />
     </div>
   );
 }
+
