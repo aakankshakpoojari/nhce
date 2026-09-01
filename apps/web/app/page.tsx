@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -27,28 +27,49 @@ import {
   Building2,
   ArrowUpRight,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
 import MetaMaskModal from "@/components/metamask-modal";
 import AuthModal from "@/components/auth/AuthModal";
+import KineticTiltCard from "@/components/ui/KineticTiltCard";
 import { useAuth } from "@/contexts/AuthContext";
 
+/**
+ * Award-Winning Lusion.co & Active Theory Inspired Interactive Landing Page
+ * W3HIRE Protocol Architecture
+ */
 export default function LandingPage() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [scrollY, setScrollY] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  // Modal & Auth state
   const [selectedRole, setSelectedRole] = useState<"client" | "freelancer" | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authInitialRole, setAuthInitialRole] = useState<"CLIENT" | "FREELANCER">("FREELANCER");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const [isThreeHovered, setIsThreeHovered] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  // Intro spin state (scroll is locked until initial 360 spin finishes)
+  // 1. CHARACTER MORPHING LOOP STATE:
+  // Cycles E ➔ (1s) ➔ 3 ➔ (1s) ➔ $ ➔ (1s) ➔ E
+  const morphSequence = ["E", "3", "$"];
+  const [morphIndex, setMorphIndex] = useState(0);
+  const [isHoveringMorphChar, setIsHoveringMorphChar] = useState(false);
+
+  // Intro spin state (scroll is locked until 360 spin finishes)
   const [isIntroSpinning, setIsIntroSpinning] = useState(true);
   const [introRotation, setIntroRotation] = useState(0);
 
+  // 1s Character Morphing Interval Loop
+  useEffect(() => {
+    const morphTimer = setInterval(() => {
+      setMorphIndex((prev) => (prev + 1) % morphSequence.length);
+    }, 1000);
+    return () => clearInterval(morphTimer);
+  }, []);
+
+  // Intro rotation effect
   useEffect(() => {
     const startTime = performance.now();
     const duration = 1400; // 1.4 seconds for initial spin
@@ -88,6 +109,7 @@ export default function LandingPage() {
     };
   }, [isIntroSpinning]);
 
+  // Handle scroll and mouse parallax
   useEffect(() => {
     const handleScroll = () => {
       if (!isIntroSpinning) {
@@ -97,8 +119,8 @@ export default function LandingPage() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const { innerWidth, innerHeight } = window;
-      const x = (e.clientX / innerWidth - 0.5) * 16;
-      const y = (e.clientY / innerHeight - 0.5) * -16;
+      const x = (e.clientX / innerWidth - 0.5) * 20;
+      const y = (e.clientY / innerHeight - 0.5) * -20;
       setMousePos({ x, y });
     };
 
@@ -110,26 +132,30 @@ export default function LandingPage() {
     };
   }, [isIntroSpinning]);
 
-  // Rotation math for interactive 3D text
+  // Active rotation angle
   const activeRotation = isIntroSpinning
     ? introRotation
     : (introRotation + scrollY * 0.8) % 360;
 
-  // Compute scroll offset for W3 (moves top-left) & HIRE (moves top-right)
-  const scrollOffset = Math.min(scrollY / 250, 1);
-  const w3X = -scrollOffset * 180;
-  const w3Y = -scrollOffset * 40;
-  const hireX = scrollOffset * 180;
-  const hireY = -scrollOffset * 40;
+  // Active morphing character (overridden to $ if explicitly hovered)
+  const currentMorphChar = isHoveringMorphChar ? "$" : morphSequence[morphIndex];
+
+  // SCROLL-TRIGGERED KINETIC SCATTER VECTORS FOR "WE HIRE":
+  // As scrollY increases (0 to 350px), characters explode/scatter outwards with staggered velocity
+  const scrollProgress = Math.min(scrollY / 320, 1);
+  const isScattered = scrollProgress > 0.15;
+
+  // Staggered particle scatter offsets
+  const charScatterOffsets = [
+    { x: -scrollProgress * 320, y: -scrollProgress * 120, rotate: -scrollProgress * 45, opacity: 1 - scrollProgress * 0.4 }, // W
+    { x: -scrollProgress * 220, y: -scrollProgress * 160, rotate: scrollProgress * 35, opacity: 1 - scrollProgress * 0.4 },  // E / 3 / $
+    { x: scrollProgress * 140, y: -scrollProgress * 120, rotate: -scrollProgress * 30, opacity: 1 - scrollProgress * 0.4 },  // H
+    { x: scrollProgress * 220, y: -scrollProgress * 160, rotate: scrollProgress * 40, opacity: 1 - scrollProgress * 0.4 },   // I
+    { x: scrollProgress * 300, y: -scrollProgress * 140, rotate: -scrollProgress * 35, opacity: 1 - scrollProgress * 0.4 },  // R
+    { x: scrollProgress * 380, y: -scrollProgress * 180, rotate: scrollProgress * 50, opacity: 1 - scrollProgress * 0.4 },   // E
+  ];
 
   const handleRoleAuth = (role: "client" | "freelancer") => {
-    setAuthInitialRole(role === "client" ? "CLIENT" : "FREELANCER");
-    setAuthMode("signin");
-    setIsAuthModalOpen(true);
-  };
-
-  const handleRoleSelect = (role: "client" | "freelancer") => {
-    setSelectedRole(role);
     setAuthInitialRole(role === "client" ? "CLIENT" : "FREELANCER");
     setAuthMode("signin");
     setIsAuthModalOpen(true);
@@ -144,7 +170,7 @@ export default function LandingPage() {
     { title: "Zero Knowledge Circuit Dev", amount: "$6,000", status: "Escrowed", tag: "Circom / ZK", time: "35m ago" },
   ];
 
-  // FAQ Items
+  // FAQ List
   const faqList = [
     {
       q: "How does automated smart contract escrow work?",
@@ -163,7 +189,7 @@ export default function LandingPage() {
       a: "W3HIRE natively supports multi-currency view and settlements in USD, EUR, INR, as well as major crypto assets (USDC, USDT, ETH, SOL) with zero hidden banking conversion spreads.",
     },
     {
-      q: "What is Decentralized Identity (DID) and how does it prevent fraud?",
+      q: "What is Decentralized Identity (DID) and how does it protect my account?",
       a: "Decentralized Identity (DID) is a cryptographically signed reputation badge tied to your account. It verifies your delivered milestones, client ratings, and technical credentials on-chain, creating a zero-fraud ecosystem immune to fake profiles or manipulated reviews.",
     },
   ];
@@ -174,7 +200,7 @@ export default function LandingPage() {
         isIntroSpinning ? "overflow-hidden h-screen select-none" : "overflow-x-hidden"
       }`}
     >
-      {/* Sticky Top Header */}
+      {/* Sticky Navbar (Docked Segment Target) */}
       <header
         className={`sticky top-0 z-40 px-6 py-4 flex items-center justify-between transition-all duration-300 ${
           scrollY > 20
@@ -182,30 +208,30 @@ export default function LandingPage() {
             : "border-b border-transparent bg-transparent"
         }`}
       >
-        {/* Brand Logo with Interactive '3' or '$' on hover */}
+        {/* Docked Brand Logo */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-xl bg-surface border border-surface-border flex items-center justify-center group-hover:border-moss/60 transition-colors shadow-md">
             <div className="flex items-center font-black text-lg">
               <span className="text-foreground">W</span>
               <div
-                onMouseEnter={() => setIsThreeHovered(true)}
-                onMouseLeave={() => setIsThreeHovered(false)}
-                className="inline-block transform-style-3d text-moss transition-transform duration-75 cursor-pointer"
+                onMouseEnter={() => setIsHoveringMorphChar(true)}
+                onMouseLeave={() => setIsHoveringMorphChar(false)}
+                className="inline-block transform-style-3d text-moss transition-transform duration-75 cursor-pointer font-mono"
                 style={{ transform: `rotateY(${activeRotation}deg)` }}
               >
-                {isThreeHovered ? "$" : "3"}
+                {currentMorphChar}
               </div>
             </div>
           </div>
           <span className="font-extrabold text-xl tracking-tight text-foreground flex items-center">
             W
             <span
-              onMouseEnter={() => setIsThreeHovered(true)}
-              onMouseLeave={() => setIsThreeHovered(false)}
-              className="inline-block text-moss transform-style-3d transition-transform duration-75 font-mono cursor-pointer"
+              onMouseEnter={() => setIsHoveringMorphChar(true)}
+              onMouseLeave={() => setIsHoveringMorphChar(false)}
+              className="inline-block text-moss transform-style-3d transition-transform duration-75 font-mono cursor-pointer mx-0.5"
               style={{ transform: `rotateY(${activeRotation}deg)` }}
             >
-              {isThreeHovered ? "$" : "3"}
+              {currentMorphChar}
             </span>
             HIRE
           </span>
@@ -233,7 +259,7 @@ export default function LandingPage() {
           </a>
         </nav>
 
-        {/* Auth / Account Controls */}
+        {/* Auth Controls */}
         <div>
           {user ? (
             <div className="flex items-center gap-3">
@@ -279,88 +305,157 @@ export default function LandingPage() {
 
       {/* Main Hero Section */}
       <main className="flex-1 flex flex-col items-center">
-        <section className="w-full max-w-5xl mx-auto px-6 pt-16 pb-24 flex flex-col items-center text-center relative overflow-hidden">
+        
+        {/* SECTION 1: HERO & SCROLL-TRIGGERED KINETIC SCATTER ANIMATION */}
+        <section className="w-full max-w-6xl mx-auto px-6 pt-12 pb-24 flex flex-col items-center text-center relative overflow-hidden min-h-[85vh] justify-center">
           
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-moss/10 rounded-full blur-3xl pointer-events-none -z-10" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-moss/10 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
 
-          {/* Hero Headline with Scroll-triggered Splitting Animation (W3 moves left, HIRE moves right) */}
+          {/* MASSIVE VIEWPORT-FILLING HEADLINE: "WE HIRE" / "W3 HIRE" */}
           <div
-            className="perspective-1000 my-4 transition-transform duration-150 ease-out"
+            className="perspective-1000 my-4 transition-transform duration-150 ease-out select-none"
             style={{
-              transform: `rotateX(${mousePos.y * 0.3}deg) rotateY(${mousePos.x * 0.3}deg)`,
+              transform: `rotateX(${mousePos.y * 0.25}deg) rotateY(${mousePos.x * 0.25}deg)`,
             }}
           >
-            <h1 className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tighter text-foreground flex items-center justify-center select-none leading-none gap-2 sm:gap-4">
-              {/* Left Segment: W3 */}
-              <motion.div
-                style={{
-                  x: w3X,
-                  y: w3Y,
+            <h1 className="text-7xl sm:text-9xl md:text-[11rem] font-black tracking-tighter text-foreground flex items-center justify-center leading-none gap-3 sm:gap-6">
+              {/* SEGMENT 1: W */}
+              <motion.span
+                animate={{
+                  x: charScatterOffsets[0].x,
+                  y: charScatterOffsets[0].y,
+                  rotate: charScatterOffsets[0].rotate,
+                  opacity: charScatterOffsets[0].opacity,
                 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                className="flex items-center"
+                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                className="inline-block"
               >
-                <span>W</span>
-                <span
-                  onMouseEnter={() => setIsThreeHovered(true)}
-                  onMouseLeave={() => setIsThreeHovered(false)}
-                  className="inline-block text-moss transform-style-3d cursor-pointer mx-1 transition-all duration-150 hover:scale-110"
-                  style={{
-                    transform: `rotateY(${activeRotation}deg)`,
-                    filter: "drop-shadow(0 0 35px rgba(132, 204, 22, 0.5))",
-                  }}
-                >
-                  {isThreeHovered ? "$" : "3"}
-                </span>
-              </motion.div>
+                W
+              </motion.span>
 
-              {/* Right Segment: HIRE */}
-              <motion.div
-                style={{
-                  x: hireX,
-                  y: hireY,
+              {/* SEGMENT 2: E ➔ 3 ➔ $ ➔ E CHARACTER MORPHING LOOP */}
+              <motion.span
+                animate={{
+                  x: charScatterOffsets[1].x,
+                  y: charScatterOffsets[1].y,
+                  rotate: charScatterOffsets[1].rotate,
+                  opacity: charScatterOffsets[1].opacity,
                 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                onMouseEnter={() => setIsHoveringMorphChar(true)}
+                onMouseLeave={() => setIsHoveringMorphChar(false)}
+                className="inline-block text-moss transform-style-3d cursor-pointer font-mono mx-1 filter drop-shadow-[0_0_40px_rgba(132,204,22,0.6)]"
+                style={{ transform: `rotateY(${activeRotation}deg)` }}
               >
-                <span>HIRE</span>
-              </motion.div>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={currentMorphChar}
+                    initial={{ rotateX: 90, opacity: 0 }}
+                    animate={{ rotateX: 0, opacity: 1 }}
+                    exit={{ rotateX: -90, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="inline-block"
+                  >
+                    {currentMorphChar}
+                  </motion.span>
+                </AnimatePresence>
+              </motion.span>
+
+              {/* SPACE */}
+              <span className="w-4 sm:w-10 inline-block" />
+
+              {/* SEGMENT 3: H */}
+              <motion.span
+                animate={{
+                  x: charScatterOffsets[2].x,
+                  y: charScatterOffsets[2].y,
+                  rotate: charScatterOffsets[2].rotate,
+                  opacity: charScatterOffsets[2].opacity,
+                }}
+                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                className="inline-block"
+              >
+                H
+              </motion.span>
+
+              {/* SEGMENT 4: I */}
+              <motion.span
+                animate={{
+                  x: charScatterOffsets[3].x,
+                  y: charScatterOffsets[3].y,
+                  rotate: charScatterOffsets[3].rotate,
+                  opacity: charScatterOffsets[3].opacity,
+                }}
+                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                className="inline-block"
+              >
+                I
+              </motion.span>
+
+              {/* SEGMENT 5: R */}
+              <motion.span
+                animate={{
+                  x: charScatterOffsets[4].x,
+                  y: charScatterOffsets[4].y,
+                  rotate: charScatterOffsets[4].rotate,
+                  opacity: charScatterOffsets[4].opacity,
+                }}
+                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                className="inline-block"
+              >
+                R
+              </motion.span>
+
+              {/* SEGMENT 6: E */}
+              <motion.span
+                animate={{
+                  x: charScatterOffsets[5].x,
+                  y: charScatterOffsets[5].y,
+                  rotate: charScatterOffsets[5].rotate,
+                  opacity: charScatterOffsets[5].opacity,
+                }}
+                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                className="inline-block"
+              >
+                E
+              </motion.span>
             </h1>
           </div>
 
-          {/* Subheadline (Appears smoothly as user scrolls) */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="mt-8 text-xl sm:text-2xl md:text-3xl text-foreground font-semibold max-w-2xl leading-snug tracking-tight"
-          >
-            Replace hope with mathematical certainty. Global freelance payments, secured and settled in seconds.
-          </motion.p>
-
-          {/* Primary & Secondary Call to Actions */}
+          {/* SUBHEADLINE & HERO CTAS REVEAL (Replaces scattered text smoothly) */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{
+              opacity: isScattered ? 1 : 0.85,
+              y: isScattered ? 0 : 10,
+              scale: isScattered ? 1 : 0.98,
+            }}
+            transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
+            className="mt-6 flex flex-col items-center space-y-8"
           >
-            <Link
-              href="/client"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-moss hover:bg-[#BEF264] text-background transition-all shadow-xl shadow-[#84CC16]/25 hover:shadow-[#84CC16]/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
-            >
-              <Briefcase className="w-5 h-5" />
-              <span>Post a Bounty</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            <p className="text-xl sm:text-2xl md:text-3xl text-foreground font-semibold max-w-3xl leading-snug tracking-tight text-center">
+              Replace hope with mathematical certainty. Global freelance payments, secured and settled in seconds.
+            </p>
 
-            <Link
-              href="/bounties"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition-all shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
-            >
-              <UserCheck className="w-5 h-5 text-moss" />
-              <span>Earn in Web3</span>
-              <ArrowUpRight className="w-5 h-5 text-muted" />
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+              <Link
+                href="/client"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-moss hover:bg-[#BEF264] text-background transition-all shadow-xl shadow-[#84CC16]/25 hover:shadow-[#84CC16]/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
+              >
+                <Briefcase className="w-5 h-5" />
+                <span>Post a Bounty</span>
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+
+              <Link
+                href="/bounties"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition-all shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
+              >
+                <UserCheck className="w-5 h-5 text-moss" />
+                <span>Earn in Web3</span>
+                <ArrowUpRight className="w-5 h-5 text-muted" />
+              </Link>
+            </div>
           </motion.div>
 
           {/* Scroll Indicator */}
@@ -369,55 +464,57 @@ export default function LandingPage() {
               href="#ticker"
               className="inline-flex items-center gap-2 text-xs font-mono text-muted hover:text-moss transition-colors bg-surface/80 px-4 py-2 rounded-full border border-surface-border shadow-sm"
             >
-              <span>Scroll to explore mechanics</span>
+              <span>Scroll down to experience live mechanics</span>
               <ChevronDown className="w-4 h-4 animate-bounce text-moss" />
             </a>
           </div>
         </section>
 
-        {/* Live Activity & Ticker Stats (Superteam-Style) */}
+        {/* SECTION 2: LIVE ACTIVITY & SOCIAL PROOF (SUPERTEAM STYLE) */}
         <section id="ticker" className="w-full max-w-6xl mx-auto px-6 py-12 border-t border-surface-border">
+          
+          {/* Glassmorphic Counter Modules with Rolling Digits */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
             
-            <div className="p-6 rounded-2xl bg-surface/90 border border-surface-border backdrop-blur-md space-y-1">
+            <KineticTiltCard className="p-6">
               <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Total Escrow Volume</span>
               <div className="text-3xl font-black text-foreground tracking-tight">$2,450,800+</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1">
+              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
                 <TrendingUp className="w-3.5 h-3.5" />
                 <span>+18.4% this month</span>
               </div>
-            </div>
+            </KineticTiltCard>
 
-            <div className="p-6 rounded-2xl bg-surface/90 border border-surface-border backdrop-blur-md space-y-1">
+            <KineticTiltCard className="p-6">
               <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Active Bounties</span>
               <div className="text-3xl font-black text-foreground tracking-tight">142 Open</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1">
+              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
                 <Zap className="w-3.5 h-3.5" />
                 <span>Live Marketplace</span>
               </div>
-            </div>
+            </KineticTiltCard>
 
-            <div className="p-6 rounded-2xl bg-surface/90 border border-surface-border backdrop-blur-md space-y-1">
+            <KineticTiltCard className="p-6">
               <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Contracts Settled</span>
               <div className="text-3xl font-black text-foreground tracking-tight">1,890 Jobs</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1">
+              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
                 <span>100% Zero Default</span>
               </div>
-            </div>
+            </KineticTiltCard>
 
-            <div className="p-6 rounded-2xl bg-surface/90 border border-surface-border backdrop-blur-md space-y-1">
+            <KineticTiltCard className="p-6">
               <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Avg. Settlement</span>
               <div className="text-3xl font-black text-[#22C55E] tracking-tight">2.4 Seconds</div>
-              <div className="text-xs text-muted font-mono flex items-center gap-1">
+              <div className="text-xs text-muted font-mono flex items-center gap-1 mt-1">
                 <Globe className="w-3.5 h-3.5" />
-                <span>Instant Global Payout</span>
+                <span>Instant Payout</span>
               </div>
-            </div>
+            </KineticTiltCard>
 
           </div>
 
-          {/* Recent Bounties Feed (Superteam-Style Live Ticker) */}
+          {/* Recent Bounties Feed (Superteam-Style Live Data Ticker) */}
           <div className="rounded-3xl bg-surface border border-surface-border p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-surface-border pb-4">
               <div className="flex items-center gap-2">
@@ -459,25 +556,25 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* The Core Conflict (Fiverr-Style Contrast Table) */}
+        {/* SECTION 3: THE CORE CONFLICT (FIVERR VS W3HIRE CONTRAST MATRIX) */}
         <section id="contrast" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
           <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
-              The Paradigm Shift
+              The Core Conflict
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
               Traditional Platforms vs. W3HIRE
             </h2>
             <p className="text-sm text-muted">
-              Compare why top global talent and high-growth Web3 teams are switching to trustless payment infrastructure.
+              Why top global builders and high-growth clients are switching to trustless escrow infrastructure.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
             {/* TRADITIONAL PLATFORMS (The Problem) */}
-            <div className="rounded-3xl bg-surface/80 border-2 border-red-950/30 p-8 space-y-6 shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-surface-border pb-4">
+            <KineticTiltCard className="p-8 border-2 border-red-950/40 shadow-xl" glowColor="rgba(239, 68, 68, 0.15)">
+              <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-800/40 text-red-400 flex items-center justify-center font-bold">
                     <X className="w-5 h-5" />
@@ -491,14 +588,14 @@ export default function LandingPage() {
 
               <div className="space-y-4 text-sm text-muted">
                 <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
-                  <span className="text-xs font-mono text-red-400 font-bold uppercase">5% to 20% Intermediary Fees</span>
+                  <span className="text-xs font-mono text-red-400 font-bold uppercase">5% to 10% Intermediary Fees</span>
                   <p className="text-xs text-muted">
-                    Hefty commission cuts taken directly from talent payouts and added to client invoices.
+                    High commissions taken directly from talent payouts and added to client invoices.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
-                  <span className="text-xs font-mono text-red-400 font-bold uppercase">3 to 14 Business Day Delays</span>
+                  <span className="text-xs font-mono text-red-400 font-bold uppercase">3 to 5 Business Day Delays</span>
                   <p className="text-xs text-muted">
                     Manual bank clearances, pending holds, and foreign wire remittance wait times.
                   </p>
@@ -507,15 +604,15 @@ export default function LandingPage() {
                 <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
                   <span className="text-xs font-mono text-red-400 font-bold uppercase">Dispute & Chargeback Risks</span>
                   <p className="text-xs text-muted">
-                    Freelancers face reversed payments and arbitrary platform account suspensions.
+                    Freelancers face reversed payments, unverified clients, and arbitrary account suspensions.
                   </p>
                 </div>
               </div>
-            </div>
+            </KineticTiltCard>
 
             {/* W3HIRE (The Solution) */}
-            <div className="rounded-3xl bg-surface border-2 border-moss/50 p-8 space-y-6 shadow-2xl shadow-moss/10 relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-surface-border pb-4">
+            <KineticTiltCard className="p-8 border-2 border-moss/60 shadow-2xl shadow-moss/10" glowColor="rgba(132, 204, 22, 0.3)">
+              <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-moss/10 border border-moss/30 text-moss flex items-center justify-center font-bold">
                     <CheckCircle2 className="w-5 h-5" />
@@ -552,16 +649,16 @@ export default function LandingPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </KineticTiltCard>
 
           </div>
         </section>
 
-        {/* The Mechanics (Simplified 3-Step Smart Contracts) */}
+        {/* SECTION 4: THE MECHANICS (3-STEP SMART CONTRACTS) */}
         <section id="how-it-works" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
           <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
-              Simplified Escrow Protocol
+              Simplified Smart Contracts
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
               How W3HIRE Works in 3 Steps
@@ -571,48 +668,48 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* STEP 1 */}
-            <div className="p-8 rounded-3xl bg-surface border border-surface-border space-y-4 relative group hover:border-moss/60 transition-all shadow-xl">
+            <KineticTiltCard className="p-8 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss font-mono text-xl font-bold flex items-center justify-center shadow-inner">
                 1
               </div>
-              <h3 className="text-xl font-bold text-foreground group-hover:text-moss transition-colors">
+              <h3 className="text-xl font-bold text-foreground">
                 Step 1: Client Locks Funds
               </h3>
               <p className="text-xs text-muted leading-relaxed">
                 The project budget is deposited into a secure, neutral digital escrow before any work begins.
               </p>
-            </div>
+            </KineticTiltCard>
 
             {/* STEP 2 */}
-            <div className="p-8 rounded-3xl bg-surface border border-surface-border space-y-4 relative group hover:border-moss/60 transition-all shadow-xl">
+            <KineticTiltCard className="p-8 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss font-mono text-xl font-bold flex items-center justify-center shadow-inner">
                 2
               </div>
-              <h3 className="text-xl font-bold text-foreground group-hover:text-moss transition-colors">
+              <h3 className="text-xl font-bold text-foreground">
                 Step 2: Talent Delivers
               </h3>
               <p className="text-xs text-muted leading-relaxed">
                 The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed.
               </p>
-            </div>
+            </KineticTiltCard>
 
             {/* STEP 3 */}
-            <div className="p-8 rounded-3xl bg-surface border border-surface-border space-y-4 relative group hover:border-moss/60 transition-all shadow-xl">
+            <KineticTiltCard className="p-8 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-[#22C55E] font-mono text-xl font-bold flex items-center justify-center shadow-inner">
                 3
               </div>
-              <h3 className="text-xl font-bold text-foreground group-hover:text-[#22C55E] transition-colors">
+              <h3 className="text-xl font-bold text-foreground">
                 Step 3: Protocol Pays Instantly
               </h3>
               <p className="text-xs text-muted leading-relaxed">
                 Upon approval, the smart contract automatically releases funds directly to the freelancer.
               </p>
-            </div>
+            </KineticTiltCard>
 
           </div>
         </section>
 
-        {/* Key Platform Features (Lusion.co Inspired Dynamic Grid) */}
+        {/* SECTION 5: KEY PLATFORM FEATURES (LUSION CARD GRID) */}
         <section id="features" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
           <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
@@ -626,10 +723,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* FEATURE 1 */}
-            <motion.div
-              whileHover={{ y: -6 }}
-              className="p-8 rounded-3xl bg-surface border border-surface-border hover:border-moss/60 transition-all space-y-4 shadow-xl"
-            >
+            <KineticTiltCard className="p-8 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
                 <CreditCard className="w-6 h-6" />
               </div>
@@ -637,13 +731,10 @@ export default function LandingPage() {
               <p className="text-xs text-muted leading-relaxed">
                 Hold, swap, and withdraw in preferred currencies (USD, EUR, INR, Crypto) without hidden banking conversion spreads.
               </p>
-            </motion.div>
+            </KineticTiltCard>
 
             {/* FEATURE 2 */}
-            <motion.div
-              whileHover={{ y: -6 }}
-              className="p-8 rounded-3xl bg-surface border border-surface-border hover:border-moss/60 transition-all space-y-4 shadow-xl"
-            >
+            <KineticTiltCard className="p-8 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
                 <ShieldCheck className="w-6 h-6" />
               </div>
@@ -651,13 +742,10 @@ export default function LandingPage() {
               <p className="text-xs text-muted leading-relaxed">
                 A closed, zero-fraud ecosystem where every client and freelancer profile is cryptographically verified.
               </p>
-            </motion.div>
+            </KineticTiltCard>
 
             {/* FEATURE 3 */}
-            <motion.div
-              whileHover={{ y: -6 }}
-              className="p-8 rounded-3xl bg-surface border border-surface-border hover:border-moss/60 transition-all space-y-4 shadow-xl"
-            >
+            <KineticTiltCard className="p-8 space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
                 <Globe className="w-6 h-6" />
               </div>
@@ -665,12 +753,12 @@ export default function LandingPage() {
               <p className="text-xs text-muted leading-relaxed">
                 Built-in, automated legal checks (KYC/GDPR) to ensure global regulatory alignment across jurisdictions.
               </p>
-            </motion.div>
+            </KineticTiltCard>
 
           </div>
         </section>
 
-        {/* FAQ Section (Lusion.co Inspired Accordion) */}
+        {/* SECTION 6: INTERACTIVE FAQ SECTION (LUSION-STYLE ELASTIC EXPANDERS) */}
         <section id="faq" className="w-full max-w-4xl mx-auto px-6 py-16 border-t border-surface-border">
           <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
@@ -718,7 +806,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Final Conversion (Footer CTA) */}
+        {/* SECTION 7: FOOTER CTA */}
         <section className="w-full max-w-5xl mx-auto px-6 py-20">
           <div className="rounded-3xl bg-gradient-to-b from-surface via-surface to-background border-2 border-moss/40 p-10 sm:p-14 text-center space-y-8 shadow-2xl shadow-moss/10 relative overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-moss/10 rounded-full blur-3xl pointer-events-none" />
@@ -738,7 +826,7 @@ export default function LandingPage() {
                   setAuthMode("signup");
                   setIsAuthModalOpen(true);
                 }}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-moss hover:bg-[#BEF264] text-background transition-all shadow-xl shadow-[#84CC16]/25 text-base flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-moss hover:bg-[#BEF264] text-background transition-all shadow-xl shadow-[#84CC16]/25 text-base flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Connect Wallet / Create DID Profile</span>
                 <ArrowRight className="w-5 h-5" />
