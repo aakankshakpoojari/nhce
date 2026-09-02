@@ -4,11 +4,26 @@
  * Instantiates and manages Prisma ORM Client connection pool for PostgreSQL / Supabase.
  */
 
+import 'dotenv/config';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
-// TODO: Ensure DATABASE_URL in .env points to valid PostgreSQL/Supabase database instance before calling prisma.$connect()
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not defined');
+}
+
+const adapter = new PrismaPg({
+  connectionString,
+});
+
 export const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+  adapter,
+  log:
+    process.env.NODE_ENV === 'development'
+      ? ['query', 'info', 'warn', 'error']
+      : ['error'],
 });
 
 export async function connectDB(): Promise<void> {
@@ -17,6 +32,6 @@ export async function connectDB(): Promise<void> {
     console.log('Database connected successfully via Prisma ORM.');
   } catch (error) {
     console.error('Failed to connect to Database:', error);
-    // Stub fallback logic if DB is not actively running in dev environment
+    throw error;
   }
 }
