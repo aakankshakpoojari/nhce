@@ -39,7 +39,6 @@ nhce/
 ```
 
 ---
-AlleyOop is hotspot password
 
 # Prerequisites
 
