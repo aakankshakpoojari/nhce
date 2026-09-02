@@ -1,3 +1,5 @@
+// Prisma schema for Web3 Freelance Platform Backend
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,16 +11,128 @@ datasource db {
 enum Role {
   CLIENT
   FREELANCER
+  JUROR
+}
+
+enum JobStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  SUBMITTED
+  VERIFYING
+  APPROVED
+  RELEASED
+  DISPUTED
+  PROCESSING_AUTORELEASE
+}
+
+enum DisputeStatus {
+  OPEN
+  VOTING
+  RESOLVED
+}
+
+enum VoteChoice {
+  FREELANCER_FAVOR
+  CLIENT_FAVOR
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  passwordHash  String
-  name          String?
-  role          Role     @default(FREELANCER)
-  walletAddress String?  @unique
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String      @id @default(uuid())
+  email             String?     @unique
+  walletAddress     String      @unique
+  siweNonce         String?
+  role              Role        @default(FREELANCER)
+  name              String?
+  bio               String?
+  location          String?
+  rating            Float       @default(5.0)
+  portfolioLinks    String[]    @default([])
+  isPro             Boolean     @default(false)
+  jobsPostedCount   Int         @default(0)
+  jobsAppliedCount  Int         @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  postedJobs        Job[]       @relation("ClientJobs")
+  assignedJobs      Job[]       @relation("FreelancerJobs")
+  initiatedDisputes Dispute[]   @relation("InitiatedDisputes")
 }
-
+
+model Job {
+  id             String       @id @default(uuid())
+  title          String
+  description    String
+  budget         Float
+  tokenSymbol    String       @default("ETH")
+  escrowAddress  String?
+  status         JobStatus    @default(OPEN)
+
+  clientId       String
+  client         User         @relation("ClientJobs", fields: [clientId], references: [id])
+
+  freelancerId   String?
+  freelancer     User?        @relation("FreelancerJobs", fields: [freelancerId], references: [id])
+
+  milestones     Milestone[]
+  disputes       Dispute[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Milestone {
+  id              String          @id @default(uuid())
+  jobId           String
+  job             Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  amount          Float
+  deadline        DateTime?
+  deliverableLink String?
+  githubPrUrl     String?
+  deploymentUrl   String?
+  aiReviewScore   Float?
+  status          MilestoneStatus @default(PENDING)
+  submittedAt     DateTime?
+
+  disputes        Dispute[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Dispute {
+  id           String        @id @default(uuid())
+  jobId        String
+  job          Job           @relation(fields: [jobId], references: [id])
+  milestoneId  String
+  milestone    Milestone     @relation(fields: [milestoneId], references: [id])
+  initiatorId  String
+  initiator    User          @relation("InitiatedDisputes", fields: [initiatorId], references: [id])
+
+  reason       String
+  evidenceUrls String[]      @default([])
+  status       DisputeStatus @default(OPEN)
+
+  votes        JurorVote[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model JurorVote {
+  id            String     @id @default(uuid())
+  disputeId     String
+  dispute       Dispute    @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  jurorAddress  String
+  vote          VoteChoice
+  rewardClaimed Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+}

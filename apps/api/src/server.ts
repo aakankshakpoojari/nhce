@@ -1,0 +1,35 @@
+/**
+ * @file server.ts
+ * @description Application Server Listener Entry Point.
+ * Establishes DB connection via Prisma ORM, starts 72-Hour Auto-Release Cron job, and opens HTTP listener on target PORT.
+ */
+
+import app from './app';
+import { env } from './config/env.config';
+import { connectDB } from './config/db.config';
+import { autoReleaseCron } from './services/cron/autoRelease.cron';
+
+async function bootstrap() {
+  console.log('Starting Web3 Freelance Platform Express Backend Services...');
+
+  // Connect to Database
+  await connectDB();
+
+  // Start Background Cron Services
+  autoReleaseCron.start();
+
+  // Start Express HTTP Server
+  const PORT = env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`=======================================================`);
+    console.log(` Server running on http://localhost:${PORT}`);
+    console.log(` Targeting EVM Devnet: Sepolia (${env.SEPOLIA_RPC_URL})`);
+    console.log(` Environment: ${env.NODE_ENV}`);
+    console.log(`=======================================================`);
+  });
+}
+
+bootstrap().catch((err) => {
+  console.error('Fatal error during server bootstrap:', err);
+  process.exit(1);
+});
