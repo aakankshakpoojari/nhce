@@ -88,10 +88,22 @@ export default function Navbar() {
           {/* User Auth Section */}
           {user ? (
             <div className="flex items-center gap-2 pl-2 border-l border-surface-border">
+              {user.role === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  className="px-2.5 py-1 rounded-xl bg-purple-950/50 border border-purple-500/40 text-purple-300 text-xs font-mono font-bold hover:bg-purple-900/60 transition"
+                >
+                  Admin Console
+                </Link>
+              )}
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surface-border text-xs font-semibold">
                 <UserIcon className="w-3.5 h-3.5 text-moss" />
                 <span className="hidden sm:inline font-mono">{user.name || user.email.split("@")[0]}</span>
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-moss/10 text-moss border border-moss/20">
+                <span className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded border ${
+                  user.role === "ADMIN"
+                    ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
+                    : "bg-moss/10 text-moss border-moss/20"
+                }`}>
                   {user.role}
                 </span>
               </div>
