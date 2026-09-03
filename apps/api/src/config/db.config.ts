@@ -1,18 +1,15 @@
-/**
- * @file db.config.ts
- * @description Database connection configuration module.
- * Instantiates and manages Prisma ORM Client connection pool for PostgreSQL / Supabase.
- */
-
 import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 
 const connectionString =
   process.env.DIRECT_URL ||
-  process.env.DATABASE_URL ||
-  'postgresql://postgres:postgres@localhost:5432/web3_freelance';
+  process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DIRECT_URL or DATABASE_URL is not defined in environment variables');
+}
 
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);

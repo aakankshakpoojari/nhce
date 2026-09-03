@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Award, Star, ExternalLink, Zap, ShieldCheck, MessageSquare } from "lucide-react";
+import { ArrowLeft, Star, ExternalLink, Zap, ShieldCheck, MessageSquare } from "lucide-react";
 import { freelancersList } from "@/lib/mock-data";
 
 export default function FreelancerDetailsPage() {
@@ -37,11 +37,6 @@ export default function FreelancerDetailsPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-black text-foreground tracking-tight">{freelancer.name}</h1>
-                {freelancer.isPro && (
-                  <span className="px-2.5 py-1 rounded-md bg-moss/20 border border-moss/40 text-moss font-mono text-xs font-bold flex items-center gap-1.5">
-                    <Award className="w-4 h-4" /> PRO
-                  </span>
-                )}
                 {freelancer.didVerified && (
                   <span className="px-2.5 py-1 rounded-md bg-blue-500/20 border border-blue-500/40 text-blue-400 font-mono text-xs font-bold flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4" /> DID VERIFIED

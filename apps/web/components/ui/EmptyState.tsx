@@ -1,7 +1,6 @@
-import React from "react";
-
+import React, { type SVGProps } from "react";
 interface EmptyStateProps {
-  icon?: any;
+  icon?: React.ComponentType<any>;
   title: string;
   description: string;
   action?: {

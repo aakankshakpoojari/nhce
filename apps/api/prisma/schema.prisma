@@ -16,11 +16,21 @@ enum Role {
 }
 
 enum JobStatus {
+  DRAFT
+  PUBLISHED
+  FREELANCER_SELECTED
   OPEN
   IN_PROGRESS
   COMPLETED
   DISPUTED
   CANCELLED
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
 }
 
 enum MilestoneStatus {
@@ -45,27 +55,31 @@ enum VoteChoice {
 }
 
 model User {
-  id                String      @id @default(uuid())
-  email             String?     @unique
+  id                String           @id @default(uuid())
+  email             String?          @unique
   passwordHash      String?
-  walletAddress     String?     @unique
+  walletAddress     String?          @unique
   siweNonce         String?
-  role              Role        @default(FREELANCER)
+  role              Role             @default(FREELANCER)
   name              String?
   bio               String?
   location          String?
-  rating            Float       @default(5.0)
-  portfolioLinks    String[]    @default([])
-  isPro             Boolean     @default(false)
-  jobsPostedCount   Int         @default(0)
-  jobsAppliedCount  Int         @default(0)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  rating            Float            @default(5.0)
+  portfolioLinks    String[]         @default([])
+  isPro             Boolean          @default(false)
+  jobsPostedCount   Int              @default(0)
+  jobsAppliedCount  Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   postedJobs        Job[]            @relation("ClientJobs")
   assignedJobs      Job[]            @relation("FreelancerJobs")
-  applications      JobApplication[]
+  applications      JobApplication[] @relation("FreelancerApplications")
   initiatedDisputes Dispute[]        @relation("InitiatedDisputes")
+
+  conversations           ConversationParticipant[] @relation("UserConversations")
+  sentMessages            Message[]                 @relation("SentMessages")
+  freelancerConversations Conversation[]            @relation("FreelancerConversations")
 }
 
 model Job {
@@ -74,8 +88,10 @@ model Job {
   description    String
   budget         Float
   tokenSymbol    String           @default("ETH")
+  skills         String[]         @default([])
+  deadline       DateTime?
   escrowAddress  String?
-  status         JobStatus        @default(OPEN)
+  status         JobStatus        @default(DRAFT)
 
   clientId       String
   client         User             @relation("ClientJobs", fields: [clientId], references: [id])
@@ -86,24 +102,10 @@ model Job {
   milestones     Milestone[]
   applications   JobApplication[]
   disputes       Dispute[]
+  conversations  Conversation[]
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-}
-
-model JobApplication {
-  id            String   @id @default(uuid())
-  jobId         String
-  job           Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  freelancerId  String
-  freelancer    User     @relation(fields: [freelancerId], references: [id])
-  pitch         String
-  requestedRate Float
-  walletAddress String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([jobId, freelancerId])
 }
 
 model Milestone {
@@ -125,6 +127,25 @@ model Milestone {
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+}
+
+model JobApplication {
+  id            String            @id @default(uuid())
+  jobId         String
+  job           Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  freelancerId  String
+  freelancer    User              @relation("FreelancerApplications", fields: [freelancerId], references: [id])
+
+  pitch         String
+  requestedRate Float
+  deliveryDays  Int?              @default(7)
+  walletAddress String?
+  status        ApplicationStatus @default(SUBMITTED)
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([jobId, freelancerId])
 }
 
 model Dispute {
@@ -167,4 +188,66 @@ model Admin {
   createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("admins")
+}
+
+// ---------------------------------------------------------------------------
+// Messaging
+// A Conversation is a job-scoped thread between the Job's client and ONE
+// freelancer (the `freelancerId` side; the client is the other participant).
+// `@@unique([jobId, freelancerId])` means a given (job, freelancer) pair always
+// resolves to the same conversation — no duplicates — while still allowing every
+// applicant on a job to have their own thread with the client. Both columns are
+// optional to leave room for future direct (job-less) threads.
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id           String                    @id @default(uuid())
+  jobId        String?
+  job          Job?                      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  freelancerId String?
+  freelancer   User?                     @relation("FreelancerConversations", fields: [freelancerId], references: [id], onDelete: Cascade)
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@unique([jobId, freelancerId])
+  @@index([jobId])
+  @@index([freelancerId])
+  @@index([updatedAt])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("UserConversations", fields: [userId], references: [id], onDelete: Cascade)
+
+  lastReadAt     DateTime?
+  joinedAt       DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  content        String
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  editedAt       DateTime?
+  deletedAt      DateTime?
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
 }

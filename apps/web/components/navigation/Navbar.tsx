@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BellIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthModal from "@/components/auth/AuthModal";
@@ -12,6 +13,7 @@ import { Briefcase, LogOut, User as UserIcon } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -24,8 +26,10 @@ export default function Navbar() {
     { name: "Community", href: "/community" },
     { name: "Swap", href: "/swap" },
     { name: "Wallet", href: "/wallet" },
-    { name: "Pro", href: "/pro", isPremium: true },
   ];
+
+  // A route is active when the current pathname is exactly the link href or a child of it.
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   // Helper to determine where the profile pill should navigate based on role
   const getProfileRoute = (role: string) => {
@@ -61,19 +65,23 @@ export default function Navbar() {
 
         {/* Center: Routing */}
         <div className="hidden lg:flex items-center justify-center space-x-8 flex-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className={`text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center ${link.isPremium ? "text-[#BEF264]" : ""
+          {navLinks.map((link) => {
+            const active = isActive(link.href);
+            return (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={`text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center ${
+                  active ? "text-[#BEF264] drop-shadow-[0_0_8px_rgba(190,242,100,0.4)]" : ""
                 }`}
-            >
-              {link.name}
-              {link.isPremium && (
-                <span className="ml-1.5 h-2 w-2 rounded-full bg-[#BEF264] shadow-[0_0_6px_rgba(190,242,100,0.8)]"></span>
-              )}
-            </Link>
-          ))}
+              >
+                {link.name}
+                {active && (
+                  <span className="absolute inset-x-0 -bottom-1.5 h-0.5 rounded-full bg-[#BEF264] shadow-[0_0_8px_rgba(190,242,100,0.8)]"></span>
+                )}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Right: Notifications & User Auth */}

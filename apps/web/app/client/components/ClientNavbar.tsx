@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bell,
-  Zap,
   Plus,
   X,
   UserCheck,
@@ -15,27 +15,31 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface ClientNavbarProps {
-  creditsRemaining: number;
-  maxCredits: number;
-  isPro: boolean;
-  onPostProjectClick: () => void;
-  onUpgradeProClick: () => void;
   notifications: Array<{ id: string; text: string; time: string; read: boolean; projectTitle: string }>;
   onMarkNotificationsRead: () => void;
 }
 
+const NAV_LINKS = [
+  { name: "Overview & Projects", href: "/client" },
+  { name: "My Jobs", href: "/client/jobs" },
+  { name: "Browse Talent", href: "/client/freelancers" },
+  { name: "Escrow Vaults", href: "/client/escrows" },
+];
+
 export default function ClientNavbar({
-  creditsRemaining,
-  maxCredits,
-  isPro,
-  onPostProjectClick,
-  onUpgradeProClick,
   notifications,
   onMarkNotificationsRead,
 }: ClientNavbarProps) {
-  const { user, logout } = useAuth(); // Added logout from useAuth
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // A route is active when the current pathname is exactly the link href or a child of
+  // it. The dashboard ("Overview & Projects") only matches its exact path so it does
+  // not stay highlighted inside sub-areas like /client/jobs.
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/client" && pathname.startsWith(`${href}/`));
 
   return (
     <nav className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-6 sm:px-8">
@@ -63,39 +67,29 @@ export default function ClientNavbar({
 
       {/* Navigation Tabs */}
       <nav className="hidden lg:flex items-center justify-center space-x-8 flex-1">
-        <Link href="/client" className="text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center">
-          Overview & Projects
-        </Link>
-        <Link href="/client/freelancers" className="text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center">
-          Browse Talent
-        </Link>
-        <Link href="/client/escrows" className="text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center">
-          Escrow Vaults
-        </Link>
+        {NAV_LINKS.map((link) => {
+          const active = isActive(link.href);
+          return (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={`text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center ${
+                active ? "text-[#BEF264] drop-shadow-[0_0_8px_rgba(190,242,100,0.4)]" : ""
+              }`}
+            >
+              {link.name}
+              {active && (
+                <span className="absolute inset-x-0 -bottom-1.5 h-0.5 rounded-full bg-[#BEF264] shadow-[0_0_8px_rgba(190,242,100,0.8)]"></span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Right: Credits Badge, Notifications, Post Project & Wallet */}
+      {/* Right: Notifications, Post Work & Account */}
       <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
 
         <ThemeToggle />
-
-        {/* Monthly Credits Pill */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surface-border text-xs font-semibold">
-          <div className="flex items-center gap-1.5">
-            <Zap className={`w-3.5 h-3.5 ${creditsRemaining > 0 ? "text-[#BEF264]" : "text-[#EF4444]"}`} />
-            <span className="font-mono text-foreground">
-              {isPro ? "PRO Unlimited" : `${creditsRemaining}/${maxCredits} Credits`}
-            </span>
-          </div>
-          {!isPro && (
-            <button
-              onClick={onUpgradeProClick}
-              className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#BEF264]/10 text-[#BEF264] border border-[#BEF264]/20 hover:bg-[#BEF264]/20 transition-colors ml-1"
-            >
-              Upgrade
-            </button>
-          )}
-        </div>
 
         {/* Notifications Dropdown */}
         <div className="relative">
@@ -163,7 +157,7 @@ export default function ClientNavbar({
                 <UserIcon className="w-3.5 h-3.5 text-moss" />
                 <span className="hidden lg:inline font-mono">{user.name || user.email?.split("@")[0]}</span>
                 <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-moss/10 text-moss border border-moss/20">
-                  CLIENT
+                  {user.role}
                 </span>
               </Link>
 
@@ -178,14 +172,14 @@ export default function ClientNavbar({
             </div>
           )}
 
-          {/* Post New Project Button */}
-          <button
-            onClick={onPostProjectClick}
+          {/* Post New Work — goes straight to the real marketplace job flow */}
+          <Link
+            href="/client/jobs/new"
             className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-sm flex items-center gap-1.5 ml-2"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Post Work</span>
-          </button>
+          </Link>
         </div>
 
       </div>

@@ -11,7 +11,6 @@ import {
   Zap,
   ArrowRight,
   ExternalLink,
-  Award,
   Lock,
 } from "lucide-react";
 
@@ -22,7 +21,6 @@ export interface Applicant {
   role: string;
   rating: number;
   completedJobs: number;
-  isPro: boolean;
   skills: string[];
   proposedUSD: number;
   proposedINR: number;
@@ -50,7 +48,6 @@ export default function ApplicantsModal({
   applicants,
   onHire,
 }: ApplicantsModalProps) {
-  const [proOnly, setProOnly] = useState(false);
   const [minRating, setMinRating] = useState<number>(0);
   const [skillFilter, setSkillFilter] = useState("");
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
@@ -58,7 +55,6 @@ export default function ApplicantsModal({
   if (!isOpen) return null;
 
   const filteredApplicants = applicants.filter((app) => {
-    if (proOnly && !app.isPro) return false;
     if (minRating > 0 && app.rating < minRating) return false;
     if (skillFilter.trim()) {
       const query = skillFilter.toLowerCase();
@@ -112,19 +108,6 @@ export default function ApplicantsModal({
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Pro Only Toggle */}
-            <button
-              onClick={() => setProOnly(!proOnly)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono transition border ${
-                proOnly
-                  ? "bg-moss text-background border-moss font-bold"
-                  : "bg-surface text-muted border-surface-border hover:text-foreground"
-              }`}
-            >
-              <Award className="w-3.5 h-3.5" />
-              <span>PRO Talent Only</span>
-            </button>
-
             {/* Rating Filter Dropdown */}
             <select
               value={minRating}
@@ -146,7 +129,6 @@ export default function ApplicantsModal({
               <p>No applicants match the selected criteria.</p>
               <button
                 onClick={() => {
-                  setProOnly(false);
                   setMinRating(0);
                   setSkillFilter("");
                 }}
@@ -170,11 +152,6 @@ export default function ApplicantsModal({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-foreground text-base">{app.name}</span>
-                        {app.isPro && (
-                          <span className="px-2 py-0.5 rounded-full bg-moss/20 border border-moss/40 text-moss font-mono text-[10px] font-bold flex items-center gap-1">
-                            <Award className="w-3 h-3" /> PRO
-                          </span>
-                        )}
                       </div>
                       <span className="text-xs text-muted">{app.role}</span>
                     </div>

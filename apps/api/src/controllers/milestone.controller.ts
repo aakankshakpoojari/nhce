@@ -13,6 +13,7 @@ import { codeReviewerAI } from '../services/ai/codeReviewer.ai';
 import { escrowService } from '../services/web3/escrow.service';
 import { MilestoneStatus } from '@prisma/client';
 
+
 export class MilestoneController {
   /**
    * POST /api/milestones/:id/submit
@@ -78,13 +79,13 @@ export class MilestoneController {
         data: { status: MilestoneStatus.VERIFYING }
       });
 
-      // 1. GitHub Oracle Check (if GitHub PR URL provided)
+      // 1. Run GitHub Oracle Check (if GitHub PR URL provided)
       let githubResult: IGitHubVerificationResult | null = null;
       if (milestone.githubPrUrl) {
         githubResult = await githubOracle.verifyPullRequest(milestone.githubPrUrl);
       }
 
-      // 2. Deployment Oracle Check (if Live URL provided)
+      // 2. Run Deployment Oracle Check (if Live URL provided)
       let deploymentResult: IDeploymentVerificationResult | null = null;
       if (milestone.deploymentUrl) {
         deploymentResult = await deploymentOracle.verifyDeployment(milestone.deploymentUrl);

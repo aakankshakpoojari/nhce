@@ -4,12 +4,12 @@
 @theme inline {
   --color-destructive-foreground: var(--destructive-foreground);
   --color-charcoal: #101312;
-  --color-moss: #84CC16;
-  --color-moss-hover: #65A30D;
-  --color-emerald: #22C55E;
-  --color-lime: #BEF264;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
+  --color-moss: var(--primary);
+  --color-moss-hover: var(--secondary);
+  --color-emerald: var(--emerald);
+  --color-lime: var(--accent);
+  --color-warning: var(--warning);
+  --color-error: var(--destructive);
 
   --color-background: var(--bg-main);
   --color-foreground: var(--text-main);
@@ -38,25 +38,32 @@
 }
 
 :root {
-  /* Light Mode Colors - Pure clean background with slate dark text & moss accents */
-  --bg-main: #FAFAF9;
-  --text-main: #111827;
-  --bg-surface: #FFFFFF;
-  --bg-surface-transparent: rgba(255, 255, 255, 0.85);
-  --bg-surface-hover: #F3F4F6;
-  --border-surface: #E5E7EB;
-  --text-muted: #6B7280;
+  /* Light Mode Colors - Custom Organic Palette */
+  --bg-main: #F5F3EA;
+  --text-main: #20251F;
+  --bg-surface: #FFFDF7;
+  --bg-surface-transparent: rgba(255, 253, 247, 0.85);
+  --bg-surface-hover: #E8EDDF;
+  --border-surface: #DDE0D4;
+  --text-muted: #73796F;
 
-  --background: #FAFAF9;
-  --foreground: #111827;
-  --card: #FFFFFF;
-  --popover: #FFFFFF;
-  --primary: #84CC16;
-  --destructive: oklch(0.396 0.141 25.723);
+  --background: #F5F3EA;
+  --foreground: #20251F;
+  --card: #FFFDF7;
+  --popover: #FFFDF7;
+  
+  --primary: #556B2F;
+  --secondary: #718355;
+  --emerald: #718355;
+  --accent: #A3B18A;
+  
+  --destructive: #DC3D3D;
+  --warning: #D97706;
   --destructive-foreground: #FFFFFF;
-  --border: #E5E7EB;
-  --input: #E5E7EB;
-  --ring: #84CC16;
+  
+  --border: #DDE0D4;
+  --input: #DDE0D4;
+  --ring: #556B2F;
   --radius: 0.625rem;
 }
 
@@ -74,9 +81,16 @@
   --foreground: #F5F5F4;
   --card: #181D1A;
   --popover: #181D1A;
+  
   --primary: #84CC16;
-  --destructive: oklch(0.396 0.141 25.723);
+  --secondary: #65A30D;
+  --emerald: #22C55E;
+  --accent: #BEF264;
+  
+  --warning: #F59E0B;
+  --destructive: #EF4444;
   --destructive-foreground: oklch(0.637 0.237 25.331);
+  
   --border: #28332D;
   --input: #28332D;
   --ring: #84CC16;

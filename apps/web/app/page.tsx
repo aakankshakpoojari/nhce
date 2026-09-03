@@ -81,7 +81,6 @@ export default function LandingPage() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [scrollY, setScrollY] = useState(0);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Modal & Auth state
   const [selectedRole, setSelectedRole] = useState<"client" | "freelancer" | null>(null);
@@ -140,24 +139,15 @@ export default function LandingPage() {
 
 
 
-  // Handle normal scroll and mouse parallax
+  // Handle normal scroll
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const { innerWidth, innerHeight } = window;
-      const x = (e.clientX / innerWidth - 0.5) * 20;
-      const y = (e.clientY / innerHeight - 0.5) * -20;
-      setMousePos({ x, y });
-    };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
 
@@ -257,31 +247,13 @@ export default function LandingPage() {
           }`}
       >
         {/* Docked Brand Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-xl bg-surface border border-surface-border flex items-center justify-center group-hover:border-moss/60 transition-colors shadow-md">
-            <div className="flex items-center font-black text-lg">
-              <span className="text-foreground">W</span>
-              <div
-                onMouseEnter={() => setIsHoveringMorphChar(true)}
-                onMouseLeave={() => setIsHoveringMorphChar(false)}
-                className="inline-block transform-style-3d text-moss transition-transform duration-75 cursor-pointer font-mono"
-                style={{ transform: `rotateY(${activeRotation}deg)` }}
-              >
-                {currentMorphChar}
-              </div>
-            </div>
-          </div>
-          <span className="font-extrabold text-xl tracking-tight text-foreground flex items-center">
-            W
-            <span
-              onMouseEnter={() => setIsHoveringMorphChar(true)}
-              onMouseLeave={() => setIsHoveringMorphChar(false)}
-              className="inline-block text-moss transform-style-3d transition-transform duration-75 font-mono cursor-pointer mx-0.5"
-              style={{ transform: `rotateY(${activeRotation}deg)` }}
-            >
-              {currentMorphChar}
-            </span>
-            HIRE
+        <Link href="/" className="text-2xl font-bold tracking-tight text-foreground flex items-center group border-none outline-none">
+          <span>W3</span>
+          <span className="flex overflow-hidden max-w-0 group-hover:max-w-[100px] transition-all duration-500 ease-in-out">
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[50ms]">H</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[100ms]">I</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[150ms]">R</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[200ms]">E</span>
           </span>
         </Link>
 
@@ -336,7 +308,7 @@ export default function LandingPage() {
                   setAuthMode("signin");
                   setIsAuthModalOpen(true);
                 }}
-                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition shadow-md"
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-warning hover:brightness-110 text-white border border-transparent transition shadow-md"
               >
                 Sign In
               </button>
@@ -363,12 +335,7 @@ export default function LandingPage() {
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-moss/10 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
 
           {/* MASSIVE VIEWPORT-FILLING HEADLINE: "WE HIRE" / "W3 HIRE" */}
-          <div
-            className="perspective-1000 my-4 transition-transform duration-150 ease-out select-none"
-            style={{
-              transform: `rotateX(${mousePos.y * 0.25}deg) rotateY(${mousePos.x * 0.25}deg)`,
-            }}
-          >
+          <div className="perspective-1000 my-4 transition-transform duration-150 ease-out select-none">
             <h1 className="text-7xl sm:text-9xl md:text-[11rem] font-black tracking-tighter text-foreground flex items-center justify-center leading-none gap-3 sm:gap-6">
               {/* SEGMENT 1: W */}
               <motion.span
@@ -458,17 +425,17 @@ export default function LandingPage() {
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-moss hover:bg-[#BEF264] text-background transition-all shadow-xl shadow-[#84CC16]/25 hover:shadow-[#84CC16]/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
               >
                 <Briefcase className="w-5 h-5" />
-                <span>Post a Bounty</span>
+                <span>Post a Project</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
 
               <Link
                 href="/bounties"
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition-all shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-warning hover:brightness-110 text-white border border-transparent transition-all shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
               >
-                <UserCheck className="w-5 h-5 text-moss" />
+                <UserCheck className="w-5 h-5" />
                 <span>Earn in Web3</span>
-                <ArrowUpRight className="w-5 h-5 text-muted" />
+                <ArrowUpRight className="w-5 h-5 opacity-80" />
               </Link>
             </div>
           </motion.div>

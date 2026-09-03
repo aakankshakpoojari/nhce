@@ -42,7 +42,6 @@ const EDGES: [number, number][] = [
 export default function NetworkScene({ scroll }: NetworkSceneProps) {
   const groupRef = useRef<THREE.Group>(null);
   const pulseRefs = useRef<THREE.Mesh[]>([]);
-  const lineRefs = useRef<THREE.Line[]>([]);
 
   // Node positions as Vector3
   const nodePositions = useMemo(
@@ -73,6 +72,12 @@ export default function NetworkScene({ scroll }: NetworkSceneProps) {
         linewidth: 1,
       }),
     []
+  );
+
+  // Connection lines as THREE.Line objects (rendered via <primitive>)
+  const lines = useMemo(
+    () => lineGeometries.map((geo) => new THREE.Line(geo, lineMaterial)),
+    [lineGeometries, lineMaterial]
   );
 
   // Node sphere material
@@ -173,14 +178,8 @@ export default function NetworkScene({ scroll }: NetworkSceneProps) {
       ))}
 
       {/* Edges — glowing connections */}
-      {lineGeometries.map((geo, i) => (
-        <primitive
-          key={`edge-${i}`}
-          object={new THREE.Line(geo, lineMaterial)}
-          ref={(el: any) => {
-            if (el) lineRefs.current[i] = el;
-          }}
-        />
+      {lines.map((line, i) => (
+        <primitive key={`edge-${i}`} object={line} />
       ))}
 
       {/* Pulses traveling along edges */}

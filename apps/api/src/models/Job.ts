@@ -6,6 +6,9 @@
 import { IMilestoneDeliverable } from './Milestone';
 
 export enum JobStatus {
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  FREELANCER_SELECTED = 'FREELANCER_SELECTED',
   OPEN = 'OPEN',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
@@ -13,17 +16,32 @@ export enum JobStatus {
   CANCELLED = 'CANCELLED'
 }
 
+export type JobCreationStatus = 'DRAFT' | 'PUBLISHED' | 'OPEN';
+
 export interface ICreateJobDTO {
   title: string;
   description: string;
   budget: number;
   tokenSymbol?: string;
-  milestones: Array<{
+  skills?: string[];
+  deadline?: string;
+  status?: JobCreationStatus;
+  milestones?: Array<{
     title: string;
     description: string;
     amount: number;
     deadline?: string;
   }>;
+}
+
+export interface IUpdateJobDTO {
+  title?: string;
+  description?: string;
+  budget?: number;
+  tokenSymbol?: string;
+  skills?: string[];
+  deadline?: string | null;
+  status?: JobStatus;
 }
 
 export interface IJob {
@@ -32,6 +50,8 @@ export interface IJob {
   description: string;
   budget: number;
   tokenSymbol: string;
+  skills: string[];
+  deadline?: Date | null;
   escrowAddress?: string;
   status: JobStatus;
   clientId: string;
@@ -39,4 +59,4 @@ export interface IJob {
   milestones?: IMilestoneDeliverable[];
   createdAt: Date;
   updatedAt: Date;
-}
+}

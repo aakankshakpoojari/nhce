@@ -1,5 +1,6 @@
 import CustomCursor from "@/components/animations/CustomCursor";
 import Navbar from "@/components/navigation/Navbar";
+import GlobalWalletBanner from "@/components/ui/GlobalWalletBanner";
 import { ApplicationProvider } from "@/contexts/ApplicationContext";
 
 export default function FreelancerLayout({
@@ -12,6 +13,7 @@ export default function FreelancerLayout({
       <CustomCursor />
       <Navbar />
       <main className="min-h-screen pt-24 px-4 sm:px-8 mx-auto w-full max-w-full">
+        <GlobalWalletBanner />
         <ApplicationProvider>
           {children}
         </ApplicationProvider>
