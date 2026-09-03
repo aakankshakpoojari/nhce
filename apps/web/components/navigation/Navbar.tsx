@@ -22,6 +22,7 @@ export default function Navbar() {
     { name: "Projects", href: "/projects" },
     { name: "Messages", href: "/messages" },
     { name: "Community", href: "/community" },
+    { name: "Swap", href: "/swap" },
     { name: "Wallet", href: "/wallet" },
     { name: "Pro", href: "/pro", isPremium: true },
   ];
