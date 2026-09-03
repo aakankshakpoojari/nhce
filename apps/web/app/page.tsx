@@ -30,8 +30,48 @@ import {
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
 import MetaMaskModal from "@/components/metamask-modal";
 import AuthModal from "@/components/auth/AuthModal";
-import KineticTiltCard from "@/components/ui/KineticTiltCard";
 import { useAuth } from "@/contexts/AuthContext";
+import KineticTiltCard from "@/components/ui/KineticTiltCard";
+import LiveFeedMarquee from "@/components/ui/LiveFeedMarquee";
+import MechanicsScrollShowcase, { MechanicsStep } from "@/components/mechanics/MechanicsScrollShowcase";
+import OutroWordmark from "@/components/ui/OutroWordmark";
+import MagneticBackground from "@/components/ui/MagneticBackground";
+
+const MECHANICS_STEPS: MechanicsStep[] = [
+  {
+    id: "step-1",
+    eyebrow: "STEP 01",
+    title: "Client Locks Funds",
+    description: "The project budget is deposited into a secure, neutral digital escrow before any work begins. This ensures 100% payment guarantee for the freelancer, eliminating default risk.",
+    features: []
+  },
+  {
+    id: "step-2",
+    eyebrow: "STEP 02",
+    title: "Talent Delivers",
+    description: "The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed. Code, design, or audit deliverables are submitted on-chain or off-chain.",
+    features: []
+  },
+  {
+    id: "step-3",
+    eyebrow: "STEP 03",
+    title: "Protocol Pays Instantly",
+    description: "Upon client approval or successful dispute resolution, the smart contract automatically releases funds directly to the freelancer's wallet. Zero banking delays.",
+    features: []
+  }
+];
+
+const FadeInCard = ({ children, index, fromLeft }: { children: React.ReactNode, index: number, fromLeft: boolean }) => (
+  <motion.div
+    initial={{ opacity: 0, x: fromLeft ? -120 : 120, scale: 0.85 }}
+    whileInView={{ opacity: 1, x: 0, scale: 1 }}
+    viewport={{ once: false, amount: 0.3 }}
+    transition={{ type: "spring", stiffness: 90, damping: 12, mass: 0.9, delay: index * 0.1 }}
+    className="h-full"
+  >
+    {children}
+  </motion.div>
+);
 
 /**
  * Award-Winning Lusion.co & Active Theory Inspired Interactive Landing Page
@@ -41,7 +81,6 @@ export default function LandingPage() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [scrollY, setScrollY] = useState(0);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Modal & Auth state
   const [selectedRole, setSelectedRole] = useState<"client" | "freelancer" | null>(null);
@@ -50,6 +89,7 @@ export default function LandingPage() {
   const [authInitialRole, setAuthInitialRole] = useState<"CLIENT" | "FREELANCER">("FREELANCER");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [hasEntered, setHasEntered] = useState(false);
 
   // 1. CHARACTER MORPHING LOOP STATE:
   // Cycles E ➔ (1s) ➔ 3 ➔ (1s) ➔ $ ➔ (1s) ➔ E
@@ -57,11 +97,8 @@ export default function LandingPage() {
   const [morphIndex, setMorphIndex] = useState(0);
   const [isHoveringMorphChar, setIsHoveringMorphChar] = useState(false);
 
-  // 4-Phase State Machine: 'INTRO_ASSEMBLED' | 'INTRO_SCATTERING' | 'INTRO_SCATTERED' | 'INTRO_REASSEMBLING'
-  const [introState, setIntroState] = useState<'INTRO_ASSEMBLED' | 'INTRO_SCATTERING' | 'INTRO_SCATTERED' | 'INTRO_REASSEMBLING'>('INTRO_ASSEMBLED');
   const [isIntroSpinning, setIsIntroSpinning] = useState(true);
   const [introRotation, setIntroRotation] = useState(0);
-  const [scatterProgress, setScatterProgress] = useState(0);
 
   // 1s Character Morphing Interval Loop
   useEffect(() => {
@@ -69,6 +106,12 @@ export default function LandingPage() {
       setMorphIndex((prev) => (prev + 1) % morphSequence.length);
     }, 1000);
     return () => clearInterval(morphTimer);
+  }, []);
+
+  // Set hasEntered after initial stagger finishes
+  useEffect(() => {
+    const t = setTimeout(() => setHasEntered(true), 1500);
+    return () => clearTimeout(t);
   }, []);
 
   // Intro 360-degree rotation effect on initial load
@@ -94,178 +137,70 @@ export default function LandingPage() {
     return () => cancelAnimationFrame(animId);
   }, []);
 
-  // 1. Forward Scatter Animation: ASSEMBLED -> SCATTERED (0 -> 1)
-  const triggerScatterAnimation = () => {
-    setIntroState('INTRO_SCATTERING');
-    const startTime = performance.now();
-    const duration = 1100; // Choreographed forward explosion timing
 
-    const animateForward = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Quintic ease-out deceleration
-      const eased = 1 - Math.pow(1 - progress, 4);
-      setScatterProgress(eased);
 
-      if (progress < 1) {
-        requestAnimationFrame(animateForward);
-      } else {
-        // Animation timeline complete callback: unlock scroll
-        setScatterProgress(1);
-        setIntroState('INTRO_SCATTERED');
-      }
-    };
-
-    requestAnimationFrame(animateForward);
-  };
-
-  // 2. Reverse Reassembly Animation: SCATTERED -> ASSEMBLED (1 -> 0)
-  const triggerReassembleAnimation = () => {
-    setIntroState('INTRO_REASSEMBLING');
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    const startTime = performance.now();
-    const duration = 1100; // Exact same reverse choreography timing
-
-    const animateReverse = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Exact reverse easing: smoothly reconstructs characters to original position
-      const eased = Math.pow(1 - progress, 4);
-      setScatterProgress(eased);
-
-      if (progress < 1) {
-        requestAnimationFrame(animateReverse);
-      } else {
-        // Reverse timeline complete callback: restore assembled state & unlock
-        setScatterProgress(0);
-        setIntroState('INTRO_ASSEMBLED');
-      }
-    };
-
-    requestAnimationFrame(animateReverse);
-  };
-
-  // Intercept scroll/touch gestures deterministically
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      // While animating in either direction, lock and ignore all gestures to prevent stacking/restarting
-      if (introState === 'INTRO_SCATTERING' || introState === 'INTRO_REASSEMBLING') {
-        e.preventDefault();
-        return;
-      }
-
-      // DOWNWARD SCROLL at assembled landing state triggers scattering
-      if (introState === 'INTRO_ASSEMBLED') {
-        if (e.deltaY > 0) {
-          e.preventDefault();
-          triggerScatterAnimation();
-        } else {
-          e.preventDefault();
-        }
-        return;
-      }
-
-      // UPWARD SCROLL: Only trigger reverse animation if user is at the top/intro boundary (scrollY <= 10)
-      if (introState === 'INTRO_SCATTERED') {
-        const currentY = window.scrollY || document.documentElement.scrollTop || 0;
-        if (currentY <= 10 && e.deltaY < 0) {
-          e.preventDefault();
-          triggerReassembleAnimation();
-        }
-        // If currentY > 10, do NOT intercept: normal upward scrolling through the website works normally
-      }
-    };
-
-    let touchStartY = 0;
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (introState === 'INTRO_SCATTERING' || introState === 'INTRO_REASSEMBLING') {
-        e.preventDefault();
-        return;
-      }
-
-      if (introState === 'INTRO_ASSEMBLED') {
-        const deltaY = touchStartY - e.touches[0].clientY;
-        if (deltaY > 10) {
-          e.preventDefault();
-          triggerScatterAnimation();
-        }
-        return;
-      }
-
-      if (introState === 'INTRO_SCATTERED') {
-        const currentY = window.scrollY || document.documentElement.scrollTop || 0;
-        const deltaY = touchStartY - e.touches[0].clientY;
-        // User swiping down (scrolling up) while at the very top
-        if (currentY <= 10 && deltaY < -10) {
-          e.preventDefault();
-          triggerReassembleAnimation();
-        }
-      }
-    };
-
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-
-    return () => {
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-    };
-  }, [introState]);
-
-  // Handle normal scroll and mouse parallax
+  // Handle normal scroll
   useEffect(() => {
     const handleScroll = () => {
-      if (introState === 'INTRO_SCATTERED') {
-        setScrollY(window.scrollY);
-      } else {
-        setScrollY(0);
-      }
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const { innerWidth, innerHeight } = window;
-      const x = (e.clientX / innerWidth - 0.5) * 20;
-      const y = (e.clientY / innerHeight - 0.5) * -20;
-      setMousePos({ x, y });
+      setScrollY(window.scrollY);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [introState]);
+  }, []);
 
   // Active rotation angle
   const activeRotation = isIntroSpinning
     ? introRotation
-    : (introRotation + scrollY * 0.8) % 360;
+    : (introRotation + scrollY * 1.5) % 360;
 
   // Active morphing character (overridden to $ if explicitly hovered)
   const currentMorphChar = isHoveringMorphChar ? "$" : morphSequence[morphIndex];
 
-  // Combined progress: scatterProgress during intro, plus subtle scroll parallax when complete
-  const effectiveProgress = introState === 'INTRO_SCATTERED'
-    ? Math.min(1 + scrollY / 400, 1.8)
-    : scatterProgress;
-  const isScattered = scatterProgress > 0.15 || introState === 'INTRO_SCATTERED';
+  // Combined progress: driven entirely by scroll now.
+  const effectiveProgress = scrollY / 250;
+  
+  const baseProgress = Math.min(effectiveProgress, 1);
+  const extraProgress = Math.max(0, effectiveProgress - 1);
+  const isScattered = effectiveProgress > 0.15;
 
   // Staggered particle scatter offsets (identical forward and reverse vectors)
   const charScatterOffsets = [
-    { x: -effectiveProgress * 320, y: -effectiveProgress * 120, rotate: -effectiveProgress * 45, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) }, // W
-    { x: -effectiveProgress * 220, y: -effectiveProgress * 160, rotate: effectiveProgress * 35, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },  // E / 3 / $
-    { x: effectiveProgress * 140, y: -effectiveProgress * 120, rotate: -effectiveProgress * 30, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },  // H
-    { x: effectiveProgress * 220, y: -effectiveProgress * 160, rotate: effectiveProgress * 40, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },   // I
-    { x: effectiveProgress * 300, y: -effectiveProgress * 140, rotate: -effectiveProgress * 35, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },  // R
-    { x: effectiveProgress * 380, y: -effectiveProgress * 180, rotate: effectiveProgress * 50, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },   // E
+    { x: -baseProgress * 320 - extraProgress * 1200, y: -baseProgress * 120 - extraProgress * 600, rotate: -baseProgress * 45 - extraProgress * 180, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) }, // W
+    { x: -baseProgress * 220 - extraProgress * 800, y: -baseProgress * 160 - extraProgress * 900, rotate: baseProgress * 35 + extraProgress * 140, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },  // E / 3 / $
+    { x: baseProgress * 140 + extraProgress * 600, y: -baseProgress * 120 - extraProgress * 800, rotate: -baseProgress * 30 - extraProgress * 120, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },  // H
+    { x: baseProgress * 220 + extraProgress * 900, y: -baseProgress * 160 - extraProgress * 700, rotate: baseProgress * 40 + extraProgress * 160, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },   // I
+    { x: baseProgress * 300 + extraProgress * 1100, y: -baseProgress * 140 - extraProgress * 650, rotate: -baseProgress * 35 - extraProgress * 140, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },  // R
+    { x: baseProgress * 380 + extraProgress * 1400, y: -baseProgress * 180 - extraProgress * 850, rotate: baseProgress * 50 + extraProgress * 200, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },   // E
   ];
+
+  const getLetterProps = (index: number) => {
+    const isEven = index % 2 === 0;
+    const initialConfig = { opacity: 0, x: isEven ? -100 : 100, y: 100, rotate: isEven ? -45 : 45, scale: 0.5 };
+    const delay = (index + 1) * 0.15;
+
+    return {
+      initial: initialConfig,
+      animate: hasEntered
+        ? {
+          x: charScatterOffsets[index].x,
+          y: charScatterOffsets[index].y,
+          rotate: charScatterOffsets[index].rotate,
+          opacity: charScatterOffsets[index].opacity,
+          scale: 1,
+        }
+        : { opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 },
+      transition: {
+        type: "spring",
+        stiffness: 90,
+        damping: 12,
+        mass: 0.9,
+        delay: hasEntered ? 0 : delay,
+      } as any
+    };
+  };
 
   const handleRoleAuth = (role: "client" | "freelancer") => {
     setAuthInitialRole(role === "client" ? "CLIENT" : "FREELANCER");
@@ -273,14 +208,7 @@ export default function LandingPage() {
     setIsAuthModalOpen(true);
   };
 
-  // Recent Live Bounties Feed Data
-  const recentBounties = [
-    { title: "Frontend Developer Needed", amount: "$1,200", status: "Escrowed", tag: "React / Next.js", time: "2m ago" },
-    { title: "Smart Contract Audit", amount: "$3,500", status: "Settled in 2.4s", tag: "Solidity", time: "8m ago" },
-    { title: "Solana Rust Architect", amount: "$4,500", status: "Escrowed", tag: "Rust / Anchor", time: "14m ago" },
-    { title: "UI/UX Mobile Redesign", amount: "$1,850", status: "Settled in 1.9s", tag: "Figma", time: "22m ago" },
-    { title: "Zero Knowledge Circuit Dev", amount: "$6,000", status: "Escrowed", tag: "Circom / ZK", time: "35m ago" },
-  ];
+
 
   // FAQ List
   const faqList = [
@@ -308,44 +236,24 @@ export default function LandingPage() {
 
   return (
     <div
-      className={`min-h-screen bg-transparent text-foreground flex flex-col justify-between selection:bg-moss selection:text-background ${
-        introState !== 'INTRO_SCATTERED' ? "overflow-hidden h-screen select-none" : "overflow-x-hidden"
-      }`}
+      className="min-h-screen bg-transparent text-foreground flex flex-col justify-between selection:bg-moss selection:text-background overflow-clip"
     >
+      <MagneticBackground />
       {/* Sticky Navbar (Docked Segment Target) */}
       <header
-        className={`sticky top-0 z-40 px-6 py-4 flex items-center justify-between transition-all duration-300 ${
-          scrollY > 20
-            ? "border-b border-surface-border bg-background/90 backdrop-blur-xl shadow-2xl shadow-black/40"
-            : "border-b border-transparent bg-transparent"
-        }`}
+        className={`sticky top-0 z-40 px-6 py-4 flex items-center justify-between transition-all duration-300 ${scrollY > 20
+          ? "border-b border-surface-border bg-background/90 backdrop-blur-xl shadow-2xl shadow-black/40"
+          : "border-b border-transparent bg-transparent"
+          }`}
       >
         {/* Docked Brand Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-xl bg-surface border border-surface-border flex items-center justify-center group-hover:border-moss/60 transition-colors shadow-md">
-            <div className="flex items-center font-black text-lg">
-              <span className="text-foreground">W</span>
-              <div
-                onMouseEnter={() => setIsHoveringMorphChar(true)}
-                onMouseLeave={() => setIsHoveringMorphChar(false)}
-                className="inline-block transform-style-3d text-moss transition-transform duration-75 cursor-pointer font-mono"
-                style={{ transform: `rotateY(${activeRotation}deg)` }}
-              >
-                {currentMorphChar}
-              </div>
-            </div>
-          </div>
-          <span className="font-extrabold text-xl tracking-tight text-foreground flex items-center">
-            W
-            <span
-              onMouseEnter={() => setIsHoveringMorphChar(true)}
-              onMouseLeave={() => setIsHoveringMorphChar(false)}
-              className="inline-block text-moss transform-style-3d transition-transform duration-75 font-mono cursor-pointer mx-0.5"
-              style={{ transform: `rotateY(${activeRotation}deg)` }}
-            >
-              {currentMorphChar}
-            </span>
-            HIRE
+        <Link href="/" className="text-2xl font-bold tracking-tight text-foreground flex items-center group border-none outline-none">
+          <span>W3</span>
+          <span className="flex overflow-hidden max-w-0 group-hover:max-w-[100px] transition-all duration-500 ease-in-out">
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[50ms]">H</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[100ms]">I</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[150ms]">R</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[200ms]">E</span>
           </span>
         </Link>
 
@@ -375,13 +283,16 @@ export default function LandingPage() {
         <div>
           {user ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-surface-border text-xs font-mono text-moss">
+              <Link
+                href={user.role === "CLIENT" ? "/client/profile" : "/profile"}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface hover:bg-surface-hover transition-colors border border-surface-border text-xs font-mono text-moss cursor-pointer"
+              >
                 <UserIcon className="w-3.5 h-3.5" />
                 <span>{user.name || user.email.split("@")[0]}</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-moss/10 border border-moss/20 text-moss uppercase">
                   {user.role}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={logout}
                 className="p-2 rounded-full bg-surface hover:bg-surface-hover text-muted hover:text-foreground border border-surface-border transition"
@@ -397,7 +308,7 @@ export default function LandingPage() {
                   setAuthMode("signin");
                   setIsAuthModalOpen(true);
                 }}
-                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition shadow-md"
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-warning hover:brightness-110 text-white border border-transparent transition shadow-md"
               >
                 Sign In
               </button>
@@ -417,29 +328,18 @@ export default function LandingPage() {
 
       {/* Main Hero Section */}
       <main className="flex-1 flex flex-col items-center">
-        
+
         {/* SECTION 1: HERO & SCROLL-TRIGGERED KINETIC SCATTER ANIMATION */}
-        <section className="w-full max-w-6xl mx-auto px-6 pt-12 pb-24 flex flex-col items-center text-center relative overflow-hidden min-h-[85vh] justify-center">
-          
+        <section className="w-full px-6 py-8 flex flex-col items-center text-center relative overflow-hidden min-h-[100svh] justify-center">
+
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-moss/10 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
 
           {/* MASSIVE VIEWPORT-FILLING HEADLINE: "WE HIRE" / "W3 HIRE" */}
-          <div
-            className="perspective-1000 my-4 transition-transform duration-150 ease-out select-none"
-            style={{
-              transform: `rotateX(${mousePos.y * 0.25}deg) rotateY(${mousePos.x * 0.25}deg)`,
-            }}
-          >
+          <div className="perspective-1000 my-4 transition-transform duration-150 ease-out select-none">
             <h1 className="text-7xl sm:text-9xl md:text-[11rem] font-black tracking-tighter text-foreground flex items-center justify-center leading-none gap-3 sm:gap-6">
               {/* SEGMENT 1: W */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[0].x,
-                  y: charScatterOffsets[0].y,
-                  rotate: charScatterOffsets[0].rotate,
-                  opacity: charScatterOffsets[0].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(0)}
                 className="inline-block"
               >
                 W
@@ -447,13 +347,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 2: E ➔ 3 ➔ $ ➔ E CHARACTER MORPHING LOOP */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[1].x,
-                  y: charScatterOffsets[1].y,
-                  rotate: charScatterOffsets[1].rotate,
-                  opacity: charScatterOffsets[1].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(1)}
                 onMouseEnter={() => setIsHoveringMorphChar(true)}
                 onMouseLeave={() => setIsHoveringMorphChar(false)}
                 className="inline-block text-moss transform-style-3d cursor-pointer font-mono mx-1 filter drop-shadow-[0_0_40px_rgba(132,204,22,0.6)]"
@@ -478,13 +372,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 3: H */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[2].x,
-                  y: charScatterOffsets[2].y,
-                  rotate: charScatterOffsets[2].rotate,
-                  opacity: charScatterOffsets[2].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(2)}
                 className="inline-block"
               >
                 H
@@ -492,13 +380,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 4: I */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[3].x,
-                  y: charScatterOffsets[3].y,
-                  rotate: charScatterOffsets[3].rotate,
-                  opacity: charScatterOffsets[3].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(3)}
                 className="inline-block"
               >
                 I
@@ -506,13 +388,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 5: R */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[4].x,
-                  y: charScatterOffsets[4].y,
-                  rotate: charScatterOffsets[4].rotate,
-                  opacity: charScatterOffsets[4].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(4)}
                 className="inline-block"
               >
                 R
@@ -520,13 +396,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 6: E */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[5].x,
-                  y: charScatterOffsets[5].y,
-                  rotate: charScatterOffsets[5].rotate,
-                  opacity: charScatterOffsets[5].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(5)}
                 className="inline-block"
               >
                 E
@@ -555,17 +425,17 @@ export default function LandingPage() {
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-moss hover:bg-[#BEF264] text-background transition-all shadow-xl shadow-[#84CC16]/25 hover:shadow-[#84CC16]/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
               >
                 <Briefcase className="w-5 h-5" />
-                <span>Post a Bounty</span>
+                <span>Post a Project</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
 
               <Link
                 href="/bounties"
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition-all shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-warning hover:brightness-110 text-white border border-transparent transition-all shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base"
               >
-                <UserCheck className="w-5 h-5 text-moss" />
+                <UserCheck className="w-5 h-5" />
                 <span>Earn in Web3</span>
-                <ArrowUpRight className="w-5 h-5 text-muted" />
+                <ArrowUpRight className="w-5 h-5 opacity-80" />
               </Link>
             </div>
           </motion.div>
@@ -583,94 +453,65 @@ export default function LandingPage() {
         </section>
 
         {/* SECTION 2: LIVE ACTIVITY & SOCIAL PROOF (SUPERTEAM STYLE) */}
-        <section id="ticker" className="w-full max-w-6xl mx-auto px-6 py-12 border-t border-surface-border">
-          
+        <section id="ticker" className="w-full max-w-6xl mx-auto px-6 py-6 border-t border-surface-border">
+
           {/* Glassmorphic Counter Modules with Rolling Digits */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-            
-            <KineticTiltCard className="p-6">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Total Escrow Volume</span>
-              <div className="text-3xl font-black text-foreground tracking-tight">$2,450,800+</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>+18.4% this month</span>
-              </div>
-            </KineticTiltCard>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
-            <KineticTiltCard className="p-6">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Active Bounties</span>
-              <div className="text-3xl font-black text-foreground tracking-tight">142 Open</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
-                <Zap className="w-3.5 h-3.5" />
-                <span>Live Marketplace</span>
-              </div>
-            </KineticTiltCard>
-
-            <KineticTiltCard className="p-6">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Contracts Settled</span>
-              <div className="text-3xl font-black text-foreground tracking-tight">1,890 Jobs</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
-                <span>100% Zero Default</span>
-              </div>
-            </KineticTiltCard>
-
-            <KineticTiltCard className="p-6">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Avg. Settlement</span>
-              <div className="text-3xl font-black text-[#22C55E] tracking-tight">2.4 Seconds</div>
-              <div className="text-xs text-muted font-mono flex items-center gap-1 mt-1">
-                <Globe className="w-3.5 h-3.5" />
-                <span>Instant Payout</span>
-              </div>
-            </KineticTiltCard>
-
-          </div>
-
-          {/* Recent Bounties Feed (Superteam-Style Live Data Ticker) */}
-          <div className="rounded-3xl bg-surface border border-surface-border p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-surface-border pb-4">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-moss animate-pulse" />
-                <h3 className="text-sm font-bold uppercase font-mono tracking-wider text-foreground">
-                  Live Network Feed • Recent Bounties & Escrow Claims
-                </h3>
-              </div>
-              <Link href="/bounties" className="text-xs font-mono text-moss hover:underline flex items-center gap-1">
-                <span>View All Marketplace</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentBounties.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 rounded-xl bg-background border border-surface-border hover:border-moss/50 transition-all space-y-2 group"
-                >
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs font-mono text-moss px-2 py-0.5 rounded bg-moss/10 border border-moss/20 font-semibold">
-                      {item.tag}
-                    </span>
-                    <span className="text-[10px] text-muted font-mono">{item.time}</span>
-                  </div>
-
-                  <h4 className="text-sm font-bold text-foreground group-hover:text-moss transition-colors">
-                    {item.title}
-                  </h4>
-
-                  <div className="flex justify-between items-center pt-1 text-xs border-t border-surface-border/60">
-                    <span className="font-mono text-muted">{item.status}</span>
-                    <span className="font-bold text-[#22C55E] font-mono">{item.amount}</span>
-                  </div>
+            <FadeInCard index={0} fromLeft={true}>
+              <KineticTiltCard className="p-6 h-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Total Escrow Volume</span>
+                <div className="text-3xl font-black text-foreground tracking-tight">$2,450,800+</div>
+                <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>+18.4% this month</span>
                 </div>
-              ))}
-            </div>
+              </KineticTiltCard>
+            </FadeInCard>
+
+            <FadeInCard index={1} fromLeft={false}>
+              <KineticTiltCard className="p-6 h-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Active Bounties</span>
+                <div className="text-3xl font-black text-foreground tracking-tight">142 Open</div>
+                <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Live Marketplace</span>
+                </div>
+              </KineticTiltCard>
+            </FadeInCard>
+
+            <FadeInCard index={2} fromLeft={true}>
+              <KineticTiltCard className="p-6 h-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Contracts Settled</span>
+                <div className="text-3xl font-black text-foreground tracking-tight">1,890 Jobs</div>
+                <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
+                  <span>100% Zero Default</span>
+                </div>
+              </KineticTiltCard>
+            </FadeInCard>
+
+            <FadeInCard index={3} fromLeft={false}>
+              <KineticTiltCard className="p-6 h-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Avg. Settlement</span>
+                <div className="text-3xl font-black text-[#22C55E] tracking-tight">2.4 Seconds</div>
+                <div className="text-xs text-muted font-mono flex items-center gap-1 mt-1">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Instant Payout</span>
+                </div>
+              </KineticTiltCard>
+            </FadeInCard>
+
           </div>
+
         </section>
 
+        {/* LiveFeedMarquee - Full Width */}
+        <LiveFeedMarquee />
+
         {/* SECTION 3: THE CORE CONFLICT (FIVERR VS W3HIRE CONTRAST MATRIX) */}
-        <section id="contrast" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+        <section id="contrast" className="w-full max-w-6xl mx-auto px-6 py-8 border-t border-surface-border">
+          <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
               The Core Conflict
             </span>
@@ -683,147 +524,121 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
+
             {/* TRADITIONAL PLATFORMS (The Problem) */}
-            <KineticTiltCard className="p-8 border-2 border-red-950/40 shadow-xl" glowColor="rgba(239, 68, 68, 0.15)">
-              <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-800/40 text-red-400 flex items-center justify-center font-bold">
-                    <X className="w-5 h-5" />
+            <FadeInCard index={0} fromLeft={true}>
+              <KineticTiltCard className="p-8 border-2 border-red-950/40 shadow-xl h-full" glowColor="rgba(239, 68, 68, 0.15)">
+                <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-800/40 text-red-400 flex items-center justify-center font-bold">
+                      <X className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-extrabold text-foreground">Traditional Platforms</h3>
+                      <span className="text-xs text-muted font-mono">Fiverr, Upwork, Web2 Banks</span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-extrabold text-foreground">Traditional Platforms</h3>
-                    <span className="text-xs text-muted font-mono">Fiverr, Upwork, Web2 Banks</span>
+                </div>
+
+                <div className="space-y-4 text-sm text-muted">
+                  <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
+                    <span className="text-xs font-mono text-red-400 font-bold uppercase">5% to 10% Intermediary Fees</span>
+                    <p className="text-xs text-muted">
+                      High commissions taken directly from talent payouts and added to client invoices.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
+                    <span className="text-xs font-mono text-red-400 font-bold uppercase">3 to 5 Business Day Delays</span>
+                    <p className="text-xs text-muted">
+                      Manual bank clearances, pending holds, and foreign wire remittance wait times.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
+                    <span className="text-xs font-mono text-red-400 font-bold uppercase">Dispute & Chargeback Risks</span>
+                    <p className="text-xs text-muted">
+                      Freelancers face reversed payments, unverified clients, and arbitrary account suspensions.
+                    </p>
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-4 text-sm text-muted">
-                <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
-                  <span className="text-xs font-mono text-red-400 font-bold uppercase">5% to 10% Intermediary Fees</span>
-                  <p className="text-xs text-muted">
-                    High commissions taken directly from talent payouts and added to client invoices.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
-                  <span className="text-xs font-mono text-red-400 font-bold uppercase">3 to 5 Business Day Delays</span>
-                  <p className="text-xs text-muted">
-                    Manual bank clearances, pending holds, and foreign wire remittance wait times.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
-                  <span className="text-xs font-mono text-red-400 font-bold uppercase">Dispute & Chargeback Risks</span>
-                  <p className="text-xs text-muted">
-                    Freelancers face reversed payments, unverified clients, and arbitrary account suspensions.
-                  </p>
-                </div>
-              </div>
-            </KineticTiltCard>
+              </KineticTiltCard>
+            </FadeInCard>
 
             {/* W3HIRE (The Solution) */}
-            <KineticTiltCard className="p-8 border-2 border-moss/60 shadow-2xl shadow-moss/10" glowColor="rgba(132, 204, 22, 0.3)">
-              <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-moss/10 border border-moss/30 text-moss flex items-center justify-center font-bold">
-                    <CheckCircle2 className="w-5 h-5" />
+            <FadeInCard index={1} fromLeft={false}>
+              <KineticTiltCard className="p-8 border-2 border-moss/60 shadow-2xl shadow-moss/10 h-full" glowColor="rgba(132, 204, 22, 0.3)">
+                <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-moss/10 border border-moss/30 text-moss flex items-center justify-center font-bold">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-extrabold text-foreground">W3HIRE Protocol</h3>
+                      <span className="text-xs text-moss font-mono font-bold">Trustless Smart Contracts</span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-extrabold text-foreground">W3HIRE Protocol</h3>
-                    <span className="text-xs text-moss font-mono font-bold">Trustless Smart Contracts</span>
+                  <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-moss text-background font-bold">
+                    RECOMMENDED
+                  </span>
+                </div>
+
+                <div className="space-y-4 text-sm text-muted">
+                  <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
+                    <span className="text-xs font-mono text-moss font-bold uppercase">Less than 1% Protocol Fee</span>
+                    <p className="text-xs text-muted">
+                      Direct peer-to-peer settlements. Freelancers keep 99%+ of every dollar earned.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
+                    <span className="text-xs font-mono text-moss font-bold uppercase">Instant Payout Release</span>
+                    <p className="text-xs text-muted">
+                      Smart contracts release funds straight to your wallet in seconds upon approval.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
+                    <span className="text-xs font-mono text-moss font-bold uppercase">Automated Escrow Lock</span>
+                    <p className="text-xs text-muted">
+                      Funds are deposited into neutral escrow before work starts. Zero payment default risk.
+                    </p>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-moss text-background font-bold">
-                  RECOMMENDED
-                </span>
-              </div>
-
-              <div className="space-y-4 text-sm text-muted">
-                <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
-                  <span className="text-xs font-mono text-moss font-bold uppercase">Less than 1% Protocol Fee</span>
-                  <p className="text-xs text-muted">
-                    Direct peer-to-peer settlements. Freelancers keep 99%+ of every dollar earned.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
-                  <span className="text-xs font-mono text-moss font-bold uppercase">Instant Payout Release</span>
-                  <p className="text-xs text-muted">
-                    Smart contracts release funds straight to your wallet in seconds upon approval.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
-                  <span className="text-xs font-mono text-moss font-bold uppercase">Automated Escrow Lock</span>
-                  <p className="text-xs text-muted">
-                    Funds are deposited into neutral escrow before work starts. Zero payment default risk.
-                  </p>
-                </div>
-              </div>
-            </KineticTiltCard>
+              </KineticTiltCard>
+            </FadeInCard>
 
           </div>
         </section>
+
 
         {/* SECTION 4: THE MECHANICS (3-STEP SMART CONTRACTS) */}
-        <section id="how-it-works" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
-              Simplified Smart Contracts
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-              How W3HIRE Works in 3 Steps
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            {/* STEP 1 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss font-mono text-xl font-bold flex items-center justify-center shadow-inner">
-                1
-              </div>
-              <h3 className="text-xl font-bold text-foreground">
-                Step 1: Client Locks Funds
-              </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                The project budget is deposited into a secure, neutral digital escrow before any work begins.
-              </p>
-            </KineticTiltCard>
-
-            {/* STEP 2 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss font-mono text-xl font-bold flex items-center justify-center shadow-inner">
-                2
-              </div>
-              <h3 className="text-xl font-bold text-foreground">
-                Step 2: Talent Delivers
-              </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed.
-              </p>
-            </KineticTiltCard>
-
-            {/* STEP 3 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-[#22C55E] font-mono text-xl font-bold flex items-center justify-center shadow-inner">
-                3
-              </div>
-              <h3 className="text-xl font-bold text-foreground">
-                Step 3: Protocol Pays Instantly
-              </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Upon approval, the smart contract automatically releases funds directly to the freelancer.
-              </p>
-            </KineticTiltCard>
-
-          </div>
-        </section>
+        <MechanicsScrollShowcase
+          steps={[
+            {
+              id: "step-1",
+              eyebrow: "STEP 1",
+              title: "Client Locks Funds",
+              description: "The project budget is deposited into a secure, neutral digital escrow before any work begins. This ensures 100% payment guarantee for the freelancer, eliminating default risk.",
+            },
+            {
+              id: "step-2",
+              eyebrow: "STEP 2",
+              title: "Talent Delivers",
+              description: "The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed. Code, design, or audit deliverables are submitted on-chain or off-chain.",
+            },
+            {
+              id: "step-3",
+              eyebrow: "STEP 3",
+              title: "Protocol Pays Instantly",
+              description: "Upon client approval or successful dispute resolution, the smart contract automatically releases funds directly to the freelancer's wallet. Zero banking delays.",
+            },
+          ]}
+        />
 
         {/* SECTION 5: KEY PLATFORM FEATURES (LUSION CARD GRID) */}
-        <section id="features" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+        <section id="features" className="w-full max-w-6xl mx-auto px-6 py-8 border-t border-surface-border">
+          <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
               Platform Architecture
             </span>
@@ -833,46 +648,52 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
+
             {/* FEATURE 1 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
-                <CreditCard className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Multi-Currency Wallets</h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Hold, swap, and withdraw in preferred currencies (USD, EUR, INR, Crypto) without hidden banking conversion spreads.
-              </p>
-            </KineticTiltCard>
+            <FadeInCard index={0} fromLeft={true}>
+              <KineticTiltCard className="p-8 space-y-4 h-full">
+                <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
+                  <CreditCard className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">Multi-Currency Wallets</h3>
+                <p className="text-xs text-muted leading-relaxed">
+                  Hold, swap, and withdraw in preferred currencies (USD, EUR, INR, Crypto) without hidden banking conversion spreads.
+                </p>
+              </KineticTiltCard>
+            </FadeInCard>
 
             {/* FEATURE 2 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Decentralized Identity (DID)</h3>
-              <p className="text-xs text-muted leading-relaxed">
-                A closed, zero-fraud ecosystem where every client and freelancer profile is cryptographically verified.
-              </p>
-            </KineticTiltCard>
+            <FadeInCard index={1} fromLeft={false}>
+              <KineticTiltCard className="p-8 space-y-4 h-full">
+                <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">Decentralized Identity (DID)</h3>
+                <p className="text-xs text-muted leading-relaxed">
+                  A closed, zero-fraud ecosystem where every client and freelancer profile is cryptographically verified.
+                </p>
+              </KineticTiltCard>
+            </FadeInCard>
 
             {/* FEATURE 3 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
-                <Globe className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Borderless Compliance</h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Built-in, automated legal checks (KYC/GDPR) to ensure global regulatory alignment across jurisdictions.
-              </p>
-            </KineticTiltCard>
+            <FadeInCard index={2} fromLeft={true}>
+              <KineticTiltCard className="p-8 space-y-4 h-full">
+                <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">Borderless Compliance</h3>
+                <p className="text-xs text-muted leading-relaxed">
+                  Built-in, automated legal checks (KYC/GDPR) to ensure global regulatory alignment across jurisdictions.
+                </p>
+              </KineticTiltCard>
+            </FadeInCard>
 
           </div>
         </section>
 
         {/* SECTION 6: INTERACTIVE FAQ SECTION (LUSION-STYLE ELASTIC EXPANDERS) */}
-        <section id="faq" className="w-full max-w-4xl mx-auto px-6 py-16 border-t border-surface-border">
-          <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
+        <section id="faq" className="w-full max-w-4xl mx-auto px-6 py-8 border-t border-surface-border">
+          <div className="text-center max-w-xl mx-auto mb-8 space-y-2">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
               Frequently Asked Questions
             </span>
@@ -887,6 +708,7 @@ export default function LandingPage() {
               return (
                 <div
                   key={index}
+                  onMouseEnter={() => setOpenFaq(index)}
                   className="rounded-2xl bg-surface border border-surface-border overflow-hidden transition-all shadow-md"
                 >
                   <button
@@ -919,8 +741,8 @@ export default function LandingPage() {
         </section>
 
         {/* SECTION 7: FOOTER CTA */}
-        <section className="w-full max-w-5xl mx-auto px-6 py-20">
-          <div className="rounded-3xl bg-gradient-to-b from-surface via-surface to-background border-2 border-moss/40 p-10 sm:p-14 text-center space-y-8 shadow-2xl shadow-moss/10 relative overflow-hidden">
+        <section className="w-full max-w-5xl mx-auto px-6 py-10">
+          <div className="rounded-3xl bg-gradient-to-b from-surface via-surface to-background border-2 border-moss/40 p-8 sm:p-10 text-center space-y-6 shadow-2xl shadow-moss/10 relative overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-moss/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="max-w-2xl mx-auto space-y-4">
@@ -948,6 +770,9 @@ export default function LandingPage() {
         </section>
 
       </main>
+
+      {/* SECTION 6: Outro Wordmark */}
+      <OutroWordmark />
 
       {/* Footer */}
       <footer className="border-t border-surface-border py-8 px-6 bg-surface/90 backdrop-blur-md">

@@ -3,7 +3,7 @@
  * @description Job & Escrow Management Controller.
  * Handles the full marketplace lifecycle: job creation (draft/publish), discovery,
  * freelancer applications, client application review, and freelancer selection.
- * Also retains legacy job registration with milestone breakdowns and escrow funding.
+ * Also retains job registration with milestone breakdowns and escrow funding.
  */
 
 import { Response } from 'express';
@@ -38,7 +38,7 @@ export class JobController {
         return;
       }
 
-      if (req.user.role !== 'CLIENT') {
+      if (req.user.role !== 'CLIENT' && req.user.role !== 'ADMIN') {
         res.status(403).json({ error: 'Forbidden: Only clients can create jobs' });
         return;
       }
@@ -123,8 +123,8 @@ export class JobController {
    */
   public async getJobs(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-      const token = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+      const q = typeof req.query.q === 'string' ? req.query.q.trim() : (typeof req.query.search === 'string' ? req.query.search.trim() : '');
+      const token = typeof req.query.token === 'string' ? req.query.token.trim() : (typeof req.query.currency === 'string' ? req.query.currency.trim() : '');
       const status = typeof req.query.status === 'string' ? req.query.status.trim().toUpperCase() : '';
       const minBudget = req.query.minBudget !== undefined ? Number(req.query.minBudget) : undefined;
       const maxBudget = req.query.maxBudget !== undefined ? Number(req.query.maxBudget) : undefined;
@@ -140,7 +140,7 @@ export class JobController {
         ];
       }
 
-      if (token) {
+      if (token && token !== 'ALL') {
         where.tokenSymbol = { equals: token, mode: 'insensitive' };
       }
 
@@ -155,8 +155,8 @@ export class JobController {
         where.budget = { ...(where.budget || {}), lte: maxBudget };
       }
 
-      const skillsParam = typeof req.query.skills === 'string' ? req.query.skills : '';
-      const skills = skillsParam.split(',').map((s) => s.trim()).filter(Boolean);
+      const skillsParam = typeof req.query.skills === 'string' ? req.query.skills : (typeof req.query.skill === 'string' ? req.query.skill : '');
+      const skills = skillsParam.split(',').map((s) => s.trim()).filter((s) => s && s.toLowerCase() !== 'all');
       if (skills.length > 0) {
         where.skills = { hasEvery: skills };
       }
@@ -208,8 +208,7 @@ export class JobController {
 
   /**
    * GET /api/jobs/:id
-   * Get specific job details. Application details are only exposed to the job owner
-   * through GET /api/jobs/:id/applications; public responses include the count only.
+   * Get specific job details.
    */
   public async getJobById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -252,7 +251,7 @@ export class JobController {
         res.status(404).json({ error: 'Job not found' });
         return;
       }
-      if (job.clientId !== req.user.id) {
+      if (job.clientId !== req.user.id && req.user.role !== 'ADMIN') {
         res.status(403).json({ error: 'Forbidden: Only the job owner can edit this job' });
         return;
       }
@@ -342,7 +341,7 @@ export class JobController {
         res.status(404).json({ error: 'Job not found' });
         return;
       }
-      if (job.clientId !== req.user.id) {
+      if (job.clientId !== req.user.id && req.user.role !== 'ADMIN') {
         res.status(403).json({ error: 'Forbidden: Only the job owner can publish this job' });
         return;
       }
@@ -372,6 +371,7 @@ export class JobController {
 
   /**
    * POST /api/jobs/:id/applications
+   * POST /api/jobs/:id/apply
    * Submit a job application (freelancer only).
    */
   public async applyToJob(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -381,28 +381,26 @@ export class JobController {
         return;
       }
 
-      if (req.user.role !== 'FREELANCER') {
+      if (req.user.role !== 'FREELANCER' && req.user.role !== 'ADMIN') {
         res.status(403).json({ error: 'Forbidden: Only freelancers can apply to jobs' });
         return;
       }
 
       const id = String(req.params.id);
-      const { pitch, requestedRate, deliveryDays, walletAddress } = req.body;
+      const { pitch, proposal, requestedRate, proposedAmount, deliveryDays, walletAddress } = req.body;
 
-      if (!pitch || !String(pitch).trim()) {
+      const finalPitch = (pitch || proposal || '').toString().trim();
+      if (!finalPitch) {
         res.status(400).json({ error: 'Proposal (pitch) is required' });
         return;
       }
-      const parsedRate = parseFloat(requestedRate);
+      const rawRate = requestedRate !== undefined ? requestedRate : proposedAmount;
+      const parsedRate = parseFloat(rawRate);
       if (isNaN(parsedRate) || parsedRate <= 0) {
         res.status(400).json({ error: 'Proposed amount must be a positive number' });
         return;
       }
-      const parsedDays = parseInt(deliveryDays, 10);
-      if (isNaN(parsedDays) || parsedDays <= 0) {
-        res.status(400).json({ error: 'Expected delivery days must be a positive number' });
-        return;
-      }
+      const parsedDays = deliveryDays ? parseInt(deliveryDays, 10) : 7;
 
       const job = await prisma.job.findUnique({ where: { id } });
       if (!job) {
@@ -415,7 +413,7 @@ export class JobController {
         return;
       }
 
-      if (job.status !== JobStatus.PUBLISHED) {
+      if (job.status !== JobStatus.PUBLISHED && job.status !== JobStatus.OPEN) {
         res.status(403).json({
           error: 'Forbidden: Applications are only accepted for published jobs',
           message: `This job is ${job.status} and is not accepting applications`
@@ -431,15 +429,17 @@ export class JobController {
         return;
       }
 
+      const applicantWallet = walletAddress || req.user.walletAddress || null;
+
       const application = await prisma.$transaction(async (tx) => {
         const created = await tx.jobApplication.create({
           data: {
             jobId: id,
             freelancerId: req.user!.id,
-            pitch: String(pitch).trim(),
+            pitch: finalPitch,
             requestedRate: parsedRate,
             deliveryDays: parsedDays,
-            walletAddress: walletAddress || req.user!.walletAddress || null,
+            walletAddress: applicantWallet,
             status: ApplicationStatus.SUBMITTED
           },
           include: { job: true, freelancer: true }
@@ -474,7 +474,7 @@ export class JobController {
         res.status(404).json({ error: 'Job not found' });
         return;
       }
-      if (job.clientId !== req.user.id) {
+      if (job.clientId !== req.user.id && req.user.role !== 'ADMIN') {
         res.status(403).json({ error: 'Forbidden: Only the job owner can view applications' });
         return;
       }
@@ -511,7 +511,7 @@ export class JobController {
         res.status(404).json({ error: 'Job not found' });
         return;
       }
-      if (job.clientId !== req.user.id) {
+      if (job.clientId !== req.user.id && req.user.role !== 'ADMIN') {
         res.status(403).json({ error: 'Forbidden: Only the job owner can review applications' });
         return;
       }
@@ -557,7 +557,7 @@ export class JobController {
         res.status(404).json({ error: 'Job not found' });
         return;
       }
-      if (job.clientId !== req.user.id) {
+      if (job.clientId !== req.user.id && req.user.role !== 'ADMIN') {
         res.status(403).json({ error: 'Forbidden: Only the job owner can reject applications' });
         return;
       }
@@ -587,15 +587,8 @@ export class JobController {
 
   /**
    * POST /api/jobs/:id/select
+   * POST /api/jobs/:id/select-freelancer
    * Select a freelancer for a job — owner only.
-   *
-   * Transactional behavior:
-   *   - selected application   -> ACCEPTED
-   *   - other applications     -> REJECTED
-   *   - job                    -> FREELANCER_SELECTED
-   *   - job.freelancerId       -> selected freelancer
-   *
-   * No contract or escrow is created here — those are later phases.
    */
   public async selectFreelancer(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -605,17 +598,17 @@ export class JobController {
       }
 
       const id = String(req.params.id);
-      const { applicationId } = req.body;
+      const { applicationId, freelancerId, freelancerAddress } = req.body;
 
-      if (!applicationId) {
-        res.status(400).json({ error: 'applicationId is required' });
+      if (!applicationId && !freelancerId && !freelancerAddress) {
+        res.status(400).json({ error: 'applicationId, freelancerId, or freelancerAddress is required' });
         return;
       }
 
       const result = await prisma.$transaction(async (tx) => {
         const job = await tx.job.findUnique({ where: { id } });
         if (!job) throw new HttpError(404, 'Job not found');
-        if (job.clientId !== req.user!.id) {
+        if (job.clientId !== req.user!.id && req.user!.role !== 'ADMIN') {
           throw new HttpError(403, 'Forbidden: Only the job owner can select a freelancer');
         }
         if (job.status === JobStatus.FREELANCER_SELECTED) {
@@ -625,31 +618,59 @@ export class JobController {
           throw new HttpError(409, `Freelancers cannot be selected while the job is ${job.status}`);
         }
 
-        const application = await tx.jobApplication.findFirst({
-          where: { id: applicationId, jobId: id }
-        });
-        if (!application) {
-          throw new HttpError(404, 'Application not found for this job');
-        }
-        if (application.status === ApplicationStatus.REJECTED) {
-          throw new HttpError(400, 'A rejected application cannot be selected');
+        let targetAppId = applicationId;
+        let selectedFreelancerId = freelancerId;
+
+        if (!selectedFreelancerId && freelancerAddress) {
+          const userWithWallet = await tx.user.findUnique({
+            where: { walletAddress: freelancerAddress }
+          });
+          if (userWithWallet) {
+            selectedFreelancerId = userWithWallet.id;
+          }
         }
 
-        // Accept the selected application, reject all others
-        await tx.jobApplication.updateMany({
-          where: { jobId: id, id: { not: applicationId } },
-          data: { status: ApplicationStatus.REJECTED }
-        });
-        await tx.jobApplication.update({
-          where: { id: applicationId },
-          data: { status: ApplicationStatus.ACCEPTED }
-        });
+        if (targetAppId) {
+          const application = await tx.jobApplication.findFirst({
+            where: { id: targetAppId, jobId: id }
+          });
+          if (!application) {
+            throw new HttpError(404, 'Application not found for this job');
+          }
+          selectedFreelancerId = application.freelancerId;
+        } else if (selectedFreelancerId) {
+          const application = await tx.jobApplication.findFirst({
+            where: { jobId: id, freelancerId: selectedFreelancerId }
+          });
+          if (application) {
+            targetAppId = application.id;
+          }
+        }
+
+        if (!selectedFreelancerId) {
+          throw new HttpError(400, 'Could not determine freelancer to select');
+        }
+
+        if (targetAppId) {
+          // Accept the selected application, reject all others
+          await tx.jobApplication.updateMany({
+            where: { jobId: id, id: { not: targetAppId } },
+            data: { status: ApplicationStatus.REJECTED }
+          });
+          await tx.jobApplication.update({
+            where: { id: targetAppId },
+            data: { status: ApplicationStatus.ACCEPTED }
+          });
+        }
 
         // Move the job into the freelancer-selected marketplace state
         const updatedJob = await tx.job.update({
           where: { id },
-          data: { status: JobStatus.FREELANCER_SELECTED, freelancerId: application.freelancerId },
-          include: { _count: { select: { applications: true } } }
+          data: {
+            status: JobStatus.FREELANCER_SELECTED,
+            freelancerId: selectedFreelancerId
+          },
+          include: { client: true, freelancer: true, milestones: true, _count: { select: { applications: true } } }
         });
 
         return updatedJob;
@@ -670,7 +691,7 @@ export class JobController {
 
   /**
    * POST /api/jobs/:id/fund
-   * Fund job and deploy smart contract Escrow Vault on Devnet
+   * Client links deployed JobEscrow vault contract address from Sepolia Devnet or deploys new vault
    */
   public async fundJobEscrow(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -680,31 +701,43 @@ export class JobController {
       }
 
       const id = String(req.params.id);
-      const { freelancerAddress, tokenAddress = '0x0000000000000000000000000000000000000000' } = req.body;
+      const { escrowAddress, freelancerAddress, tokenAddress = '0x0000000000000000000000000000000000000000' } = req.body;
 
-      const job = await prisma.job.findUnique({ where: { id } });
+      const job = await prisma.job.findUnique({
+        where: { id },
+        include: { freelancer: true }
+      });
+
       if (!job) {
         res.status(404).json({ error: 'Job not found' });
         return;
       }
 
-      // Call Escrow Service to deploy JobEscrow vault on Sepolia Devnet
-      const fundingWei = (job.budget * 1e18).toString();
-      const vaultResult = await escrowService.createJobEscrowVault(job.id, freelancerAddress, tokenAddress, fundingWei);
+      let finalEscrowAddress = escrowAddress;
+      let vaultResult: { escrowAddress: string; txHash: string } | null = null;
+
+      // If client provides a pre-deployed escrowAddress from Sepolia Devnet, link directly
+      if (!finalEscrowAddress) {
+        const targetFreelancerAddr = freelancerAddress || job.freelancer?.walletAddress || '0x0000000000000000000000000000000000000000';
+        const fundingWei = BigInt(Math.floor(job.budget * 1e18)).toString();
+        vaultResult = await escrowService.createJobEscrowVault(job.id, targetFreelancerAddr, tokenAddress, fundingWei);
+        finalEscrowAddress = vaultResult.escrowAddress;
+      }
 
       // Update Job status and escrow address in DB
       const updatedJob = await prisma.job.update({
         where: { id },
         data: {
-          escrowAddress: vaultResult.escrowAddress,
+          escrowAddress: finalEscrowAddress,
           status: JobStatus.IN_PROGRESS
-        }
+        },
+        include: { client: true, freelancer: true, milestones: true }
       });
 
       res.json({
-        message: 'Job escrow vault created and funded successfully',
+        message: 'Job escrow vault linked and funded successfully',
         job: updatedJob,
-        vault: vaultResult
+        vault: vaultResult || { escrowAddress: finalEscrowAddress }
       });
     } catch (error: any) {
       res.status(500).json({ error: 'Escrow funding failed', message: error.message });
@@ -712,4 +745,4 @@ export class JobController {
   }
 }
 
-export const jobController = new JobController();
+export const jobController = new JobController();

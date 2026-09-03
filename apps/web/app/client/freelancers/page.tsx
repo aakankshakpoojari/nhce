@@ -38,16 +38,7 @@ export default function BrowseTalentPage() {
   return (
     <div className="min-h-screen bg-transparent text-foreground flex flex-col selection:bg-moss selection:text-background">
       
-      {/* Top Navbar */}
-      <ClientNavbar
-        creditsRemaining={3}
-        maxCredits={3}
-        isPro={false}
-        onPostProjectClick={() => {}}
-        onUpgradeProClick={() => {}}
-        notifications={[]}
-        onMarkNotificationsRead={() => {}}
-      />
+
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-6">

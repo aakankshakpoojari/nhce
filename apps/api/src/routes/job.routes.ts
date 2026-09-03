@@ -27,13 +27,15 @@ router.post('/:id/publish', authenticateToken, (req, res) => jobController.publi
 // Applications
 router.get('/:id/applications', authenticateToken, (req, res) => jobController.getJobApplications(req, res));
 router.post('/:id/applications', authenticateToken, checkJobApplicationLimit, (req, res) => jobController.applyToJob(req, res));
+router.post('/:id/apply', authenticateToken, checkJobApplicationLimit, (req, res) => jobController.applyToJob(req, res));
 router.post('/:id/applications/:applicationId/review', authenticateToken, (req, res) => jobController.reviewApplication(req, res));
 router.post('/:id/applications/:applicationId/reject', authenticateToken, (req, res) => jobController.rejectApplication(req, res));
 
 // Freelancer selection (client only — enforced inside the controller)
 router.post('/:id/select', authenticateToken, (req, res) => jobController.selectFreelancer(req, res));
+router.post('/:id/select-freelancer', authenticateToken, (req, res) => jobController.selectFreelancer(req, res));
 
 // Escrow funding (later lifecycle phase)
 router.post('/:id/fund', authenticateToken, (req, res) => jobController.fundJobEscrow(req, res));
 
-export default router;
+export default router;

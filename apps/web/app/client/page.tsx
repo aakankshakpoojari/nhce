@@ -20,9 +20,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import ClientNavbar from "./components/ClientNavbar";
-import PostProjectModal from "./components/PostProjectModal";
-import UpgradeProModal from "./components/UpgradeProModal";
 import ApplicantsModal, { Applicant } from "./components/ApplicantsModal";
 import EscrowCard, { EscrowItem } from "./components/EscrowCard";
 import WalletNoticeBanner from "@/components/ui/WalletNoticeBanner";
@@ -43,10 +40,6 @@ export interface Project {
 
 export default function ClientDashboardPage() {
   const router = useRouter();
-  const [creditsRemaining, setCreditsRemaining] = useState(3);
-  const [isPro, setIsPro] = useState(false);
-  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [activeProjectForApplicants, setActiveProjectForApplicants] = useState<Project | null>(null);
   const [roleConflictWarning, setRoleConflictWarning] = useState<string | null>(null);
 
@@ -54,13 +47,6 @@ export default function ClientDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [realJobs, setRealJobs] = useState<Job[]>([]);
   const [escrows, setEscrows] = useState<EscrowItem[]>([]);
-  const [notifications, setNotifications] = useState<Array<{
-    id: string;
-    projectTitle: string;
-    text: string;
-    time: string;
-    read: boolean;
-  }>>([]);
 
   const topFreelancers = [
     { name: "Vikram S.", role: "Smart Contract Dev", rating: 4.9 },
@@ -85,14 +71,18 @@ export default function ClientDashboardPage() {
       }
 
       // Load saved projects
-      const savedProjects = localStorage.getItem("w3hire_client_projects");
-      if (savedProjects) {
-        try {
-          setProjects(JSON.parse(savedProjects));
-        } catch (e) {
-          console.error(e);
+      const loadProjects = () => {
+        const savedProjects = localStorage.getItem("w3hire_client_projects");
+        if (savedProjects) {
+          try {
+            setProjects(JSON.parse(savedProjects));
+          } catch (e) {
+            console.error(e);
+          }
         }
-      }
+      };
+      
+      loadProjects();
 
       // Load saved escrows
       const savedEscrows = localStorage.getItem("w3hire_client_escrows");
@@ -103,19 +93,6 @@ export default function ClientDashboardPage() {
           console.error(e);
         }
       }
-
-      // Load saved credits
-      const savedCredits = localStorage.getItem("w3hire_client_credits");
-      if (savedCredits !== null) {
-        setCreditsRemaining(Number(savedCredits));
-      }
-
-      // Load saved pro status
-      const savedPro = localStorage.getItem("w3hire_client_is_pro");
-      if (savedPro === "true") {
-        setIsPro(true);
-      }
-
       // Load real jobs from the backend marketplace API
       const token = localStorage.getItem("w3hire_auth_token");
       if (token) {
@@ -123,6 +100,9 @@ export default function ClientDashboardPage() {
           .then((data) => setRealJobs(data.jobs || []))
           .catch((e) => console.warn("Could not load jobs from API", e));
       }
+
+      window.addEventListener("w3hire_projects_updated", loadProjects);
+      return () => window.removeEventListener("w3hire_projects_updated", loadProjects);
     }
   }, []);
 
@@ -142,81 +122,7 @@ export default function ClientDashboardPage() {
     }
   };
 
-  // Handle Project Creation
-  const handleCreateProject = (newProjectData: {
-    title: string;
-    description: string;
-    skills: string[];
-    budgetUSD: number;
-    budgetINR: number;
-    duration: string;
-  }) => {
-    if (!isPro && creditsRemaining > 0) {
-      const newCredits = creditsRemaining - 1;
-      setCreditsRemaining(newCredits);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("w3hire_client_credits", String(newCredits));
-      }
-    }
-
-    const newProj: Project = {
-      id: `proj-${Date.now()}`,
-      ...newProjectData,
-      status: "open",
-      createdAt: "Just now",
-      applicants: [],
-    };
-
-    const updated = [newProj, ...projects];
-    saveProjectsToStorage(updated);
-
-    // Simulate incoming applicants notification after a few seconds
-    setTimeout(() => {
-      const applicantName = "Vikram Sharma";
-      setNotifications((prev) => [
-        {
-          id: `notif-${Date.now()}`,
-          projectTitle: newProj.title,
-          text: `${applicantName} (⭐ 4.9 PRO) applied to your project.`,
-          time: "Just now",
-          read: false,
-        },
-        ...prev,
-      ]);
-
-      // Add sample incoming candidate to the project
-      setProjects((currentProjects) => {
-        const next = currentProjects.map((p) =>
-          p.id === newProj.id
-            ? {
-                ...p,
-                applicants: [
-                  ...p.applicants,
-                  {
-                    id: `app-${Date.now()}`,
-                    name: applicantName,
-                    avatar: "VS",
-                    role: "Senior Smart Contract Engineer",
-                    rating: 4.9,
-                    completedJobs: 18,
-                    isPro: true,
-                    skills: newProj.skills.length > 0 ? newProj.skills : ["Solidity", "Security"],
-                    proposedUSD: newProj.budgetUSD,
-                    proposedINR: newProj.budgetINR,
-                    proposal: "I specialize in high-throughput Web3 protocols and escrow smart contracts. Ready to start immediately.",
-                    githubUrl: "https://github.com",
-                    portfolioUrl: "https://portfolio.dev",
-                  },
-
-                ],
-              }
-            : p
-        );
-        saveProjectsToStorage(next);
-        return next;
-      });
-    }, 2500);
-  };
+  // Handled in layout.tsx
 
   // Handle Hiring & Escrow Creation
   const handleHireApplicant = (applicant: Applicant) => {
@@ -248,30 +154,11 @@ export default function ClientDashboardPage() {
     saveEscrowsToStorage(updated);
   };
 
-  const handleMarkNotificationsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const handleActivatePro = () => {
-    setIsPro(true);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("w3hire_client_is_pro", "true");
-    }
-  };
+  // Removed duplicated functions
 
   return (
-    <div className="min-h-screen bg-transparent text-foreground flex flex-col selection:bg-moss selection:text-background">
+    <div className="flex-1 w-full flex flex-col">
       
-      {/* Top Client Navbar */}
-      <ClientNavbar
-        creditsRemaining={creditsRemaining}
-        maxCredits={3}
-        isPro={isPro}
-        onPostProjectClick={() => setIsPostModalOpen(true)}
-        onUpgradeProClick={() => setIsProModalOpen(true)}
-        notifications={notifications}
-        onMarkNotificationsRead={handleMarkNotificationsRead}
-      />
 
       {/* Role Conflict Warning Banner (if user is logged in as freelancer) */}
       {roleConflictWarning && (
@@ -290,7 +177,7 @@ export default function ClientDashboardPage() {
       )}
 
       {/* Main Dashboard Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-8">
+      <main className="flex-1 min-h-screen pt-8 px-4 sm:px-8 max-w-7xl w-full mx-auto space-y-8 pb-12">
         
         {/* Wallet Notice Prompt */}
         <WalletNoticeBanner role="client" />
@@ -306,23 +193,11 @@ export default function ClientDashboardPage() {
                 <span className="w-2 h-2 rounded-full bg-moss" />
               </div>
               <div className="text-2xl font-black text-foreground font-mono">
-                {isPro ? (
-                  <span className="text-moss">PRO UNLIMITED</span>
-                ) : (
-                  <span>{creditsRemaining} / 3 <span className="text-xs text-muted font-normal">Credits Left</span></span>
-                )}
+                <span className="text-moss">CREDITS IN NAV</span>
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-surface-border text-xs text-muted flex justify-between items-center">
-              <span>{isPro ? "Unlimited Postings" : "Free Plan (3 free posts/month)"}</span>
-              {!isPro && (
-                <button
-                  onClick={() => setIsProModalOpen(true)}
-                  className="text-moss font-bold hover:underline"
-                >
-                  Buy Pro →
-                </button>
-              )}
+              <span>View credits limit top right</span>
             </div>
           </div>
 
@@ -349,6 +224,7 @@ export default function ClientDashboardPage() {
                 Post a Project & Hire
               </div>
             </div>
+            {/* Using window event to trigger modal open handled in layout */}
             <button
               onClick={() => router.push("/client/jobs/new")}
               className="mt-4 py-2.5 px-4 rounded-xl bg-moss hover:bg-[#BEF264] text-background font-semibold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-md shadow-[#84CC16]/20"
@@ -559,24 +435,7 @@ export default function ClientDashboardPage() {
 
       </main>
 
-      {/* Modals */}
-      <PostProjectModal
-        isOpen={isPostModalOpen}
-        onClose={() => setIsPostModalOpen(false)}
-        creditsRemaining={creditsRemaining}
-        isPro={isPro}
-        onSubmit={handleCreateProject}
-        onUpgradePro={() => {
-          setIsPostModalOpen(false);
-          setIsProModalOpen(true);
-        }}
-      />
-
-      <UpgradeProModal
-        isOpen={isProModalOpen}
-        onClose={() => setIsProModalOpen(false)}
-        onConfirmPro={handleActivatePro}
-      />
+      {/* Modals are handled in layout */}
 
       {activeProjectForApplicants && (
         <ApplicantsModal

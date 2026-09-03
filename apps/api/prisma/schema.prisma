@@ -96,8 +96,8 @@ model Job {
   freelancer     User?            @relation("FreelancerJobs", fields: [freelancerId], references: [id])
 
   milestones     Milestone[]
-  disputes       Dispute[]
   applications   JobApplication[]
+  disputes       Dispute[]
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -133,7 +133,7 @@ model JobApplication {
 
   pitch         String
   requestedRate Float
-  deliveryDays  Int
+  deliveryDays  Int?              @default(7)
   walletAddress String?
   status        ApplicationStatus @default(SUBMITTED)
 
@@ -170,4 +170,17 @@ model JurorVote {
   vote          VoteChoice
   rewardClaimed Boolean    @default(false)
   createdAt     DateTime   @default(now())
+}
+
+model Admin {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email      String    @unique
+  password   String
+  name       String
+  seatNumber Int?      @default(1) @map("seat_number")
+  title      String?   @default("Platform Arbitrator")
+  role       String?   @default("ADMIN")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("admins")
 }

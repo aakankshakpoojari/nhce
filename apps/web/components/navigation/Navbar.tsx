@@ -8,7 +8,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import NotificationPanel from "@/components/notifications/NotificationPanel";
 import { AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { Briefcase, UserCheck, LogOut, User as UserIcon } from "lucide-react";
+import { Briefcase, LogOut, User as UserIcon } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -22,18 +22,31 @@ export default function Navbar() {
     { name: "Projects", href: "/projects" },
     { name: "Messages", href: "/messages" },
     { name: "Community", href: "/community" },
+    { name: "Swap", href: "/swap" },
     { name: "Wallet", href: "/wallet" },
-    { name: "Profile", href: "/profile" },
     { name: "Pro", href: "/pro", isPremium: true },
   ];
+
+  // Helper to determine where the profile pill should navigate based on role
+  const getProfileRoute = (role: string) => {
+    if (role === "CLIENT") return "/client/profile";
+    if (role === "ADMIN") return "/admin/dashboard";
+    return "/profile"; // Default for FREELANCER
+  };
 
   return (
     <>
       <nav className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-6 sm:px-8">
         {/* Left: Logo */}
         <div className="flex items-center gap-6 flex-shrink-0">
-          <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive">
-            W3HIRE
+          <Link href="/" className="text-2xl font-bold tracking-tight text-foreground flex items-center group border-none outline-none">
+            <span>W3</span>
+            <span className="flex overflow-hidden max-w-0 group-hover:max-w-[100px] transition-all duration-500 ease-in-out">
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[50ms]">H</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[100ms]">I</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[150ms]">R</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[200ms]">E</span>
+            </span>
           </Link>
 
           {/* Quick Portal Switcher */}
@@ -52,9 +65,8 @@ export default function Navbar() {
             <Link
               key={link.name}
               href={link.href}
-              className={`text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center ${
-                link.isPremium ? "text-[#BEF264]" : ""
-              }`}
+              className={`text-[var(--color-muted)] font-medium transition-all duration-300 var(--ease-fluid) hover:text-[#BEF264] hover:drop-shadow-[0_0_8px_rgba(190,242,100,0.4)] interactive relative flex items-center ${link.isPremium ? "text-[#BEF264]" : ""
+                }`}
             >
               {link.name}
               {link.isPremium && (
@@ -88,25 +100,16 @@ export default function Navbar() {
           {/* User Auth Section */}
           {user ? (
             <div className="flex items-center gap-2 pl-2 border-l border-surface-border">
-              {user.role === "ADMIN" && (
-                <Link
-                  href="/admin"
-                  className="px-2.5 py-1 rounded-xl bg-purple-950/50 border border-purple-500/40 text-purple-300 text-xs font-mono font-bold hover:bg-purple-900/60 transition"
-                >
-                  Admin Console
-                </Link>
-              )}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surface-border text-xs font-semibold">
+              <Link
+                href={getProfileRoute(user.role)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-hover border border-surface-border text-xs font-semibold transition-colors cursor-pointer"
+              >
                 <UserIcon className="w-3.5 h-3.5 text-moss" />
                 <span className="hidden sm:inline font-mono">{user.name || user.email.split("@")[0]}</span>
-                <span className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded border ${
-                  user.role === "ADMIN"
-                    ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
-                    : "bg-moss/10 text-moss border-moss/20"
-                }`}>
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-moss/10 text-moss border border-moss/20">
                   {user.role}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={logout}
                 title="Sign Out"
@@ -119,21 +122,12 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  setAuthMode("signin");
+                  setAuthMode("signin"); // Modal handles the UI to toggle between Sign In / Sign Up
                   setIsAuthModalOpen(true);
                 }}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface hover:bg-surface-hover text-foreground border border-surface-border transition"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-sm"
               >
-                Sign In
-              </button>
-              <button
-                onClick={() => {
-                  setAuthMode("signup");
-                  setIsAuthModalOpen(true);
-                }}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-sm"
-              >
-                Sign Up
+                Sign In / Sign Up
               </button>
             </div>
           )}
