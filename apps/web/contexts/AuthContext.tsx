@@ -6,23 +6,33 @@ export interface User {
   id: string;
   email: string;
   name?: string;
-  role: "CLIENT" | "FREELANCER";
+  role: "CLIENT" | "FREELANCER" | "ADMIN";
   walletAddress?: string | null;
 }
+
+export const ADMIN_TEAM_ACCOUNTS = [
+  { id: "adm-owner", email: "aakankshakpoojari265@gmail.com", name: "Aakanksha Poojari", role: "ADMIN" as const, title: "Chief Arbitration Officer", password: "123456" },
+  { id: "adm-1", email: "admin1@w3hire.io", name: "Elena Rostova", role: "ADMIN" as const, title: "Lead Arbitrator", password: "123456" },
+  { id: "adm-2", email: "admin2@w3hire.io", name: "Marcus Vance", role: "ADMIN" as const, title: "Smart Contract Auditor", password: "123456" },
+  { id: "adm-3", email: "admin3@w3hire.io", name: "Sarah Chen", role: "ADMIN" as const, title: "Fintech Compliance Arbitrator", password: "123456" },
+  { id: "adm-4", email: "admin4@w3hire.io", name: "Tariq Al-Mansoor", role: "ADMIN" as const, title: "Escrow Protocol Engineer", password: "123456" },
+  { id: "adm-5", email: "admin5@w3hire.io", name: "David Kim", role: "ADMIN" as const, title: "Dispute Operations Officer", password: "123456" },
+  { id: "adm-main", email: "admin@w3hire.io", name: "Chief Administrator", role: "ADMIN" as const, title: "Senior Arbitrator", password: "123456" },
+];
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (email: string, password: string, name: string, role: "CLIENT" | "FREELANCER") => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  signup: (email: string, password: string, name: string, role: "CLIENT" | "FREELANCER") => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => void;
   connectWallet: (walletAddress: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   disconnectWallet: () => Promise<void>;
-  updateUserRole: (role: "CLIENT" | "FREELANCER") => void;
+  updateUserRole: (role: "CLIENT" | "FREELANCER" | "ADMIN") => void;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "") + "/api";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -72,24 +82,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout();
       }
     } catch (err) {
-      console.warn("Could not fetch user profile from API, using cached state if present.", err);
+      console.warn("Could not fetch user profile from API.", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> => {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 1. First, check dynamic Supabase admin API route
+    try {
+      const adminRes = await fetch("/api/admins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail, password }),
+      });
+
+      if (adminRes.ok) {
+        const adminData = await adminRes.json();
+        if (adminData.success && adminData.user) {
+          const adminToken = "admin_auth_jwt_" + Date.now();
+          setToken(adminToken);
+          setUser(adminData.user);
+          localStorage.setItem("w3hire_auth_token", adminToken);
+          localStorage.setItem("w3hire_user", JSON.stringify(adminData.user));
+          return { success: true, user: adminData.user };
+        }
+      }
+    } catch (e) {
+      console.warn("Direct admin api check skipped, verifying local admin registry.");
+    }
+
+    // 2. Check pre-registered admin accounts (including aakankshakpoojari265@gmail.com)
+    const matchedAdmin = ADMIN_TEAM_ACCOUNTS.find(
+      (a) => a.email.toLowerCase() === normalizedEmail && a.password === password
+    );
+    if (matchedAdmin) {
+      const adminUser: User = {
+        id: matchedAdmin.id,
+        email: matchedAdmin.email,
+        name: matchedAdmin.name,
+        role: "ADMIN",
+        walletAddress: "0x71C...b821",
+      };
+      const adminToken = "admin_auth_jwt_" + Date.now();
+      setToken(adminToken);
+      setUser(adminUser);
+      localStorage.setItem("w3hire_auth_token", adminToken);
+      localStorage.setItem("w3hire_user", JSON.stringify(adminUser));
+      return { success: true, user: adminUser };
+    }
+
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: normalizedEmail, password }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, error: data.message || "Failed to log in" };
+        return { success: false, error: data.error || data.message || "Failed to log in" };
       }
 
       setToken(data.token);
@@ -100,14 +155,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("w3hire_active_address", data.user.walletAddress);
       }
 
-      return { success: true };
+      return { success: true, user: data.user };
     } catch (err: any) {
       // Fallback offline mock login for seamless demo experience
+      // Check if user previously signed up with a stored role
+      let savedRole: "CLIENT" | "FREELANCER" = "FREELANCER";
+      try {
+        const storedUsers = JSON.parse(localStorage.getItem("w3hire_mock_registered_users") || "{}");
+        if (storedUsers[normalizedEmail]) {
+          savedRole = storedUsers[normalizedEmail].role || "FREELANCER";
+        }
+      } catch (e) {}
+
       const mockUser: User = {
         id: `usr-${Date.now()}`,
-        email,
-        name: email.split("@")[0],
-        role: "FREELANCER",
+        email: normalizedEmail,
+        name: normalizedEmail.split("@")[0],
+        role: savedRole,
         walletAddress: null,
       };
       const mockToken = "mock_jwt_token_" + Date.now();
@@ -117,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("w3hire_auth_token", mockToken);
       localStorage.setItem("w3hire_user", JSON.stringify(mockUser));
 
-      return { success: true };
+      return { success: true, user: mockUser };
     }
   };
 
@@ -126,18 +190,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     name: string,
     role: "CLIENT" | "FREELANCER"
-  ) => {
+  ): Promise<{ success: boolean; user?: User; error?: string }> => {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Security check: Public signup can never register an admin role
+    if ((role as any) === "ADMIN") {
+      return { success: false, error: "Unauthorized: Admin accounts cannot be created via public registration." };
+    }
+
     try {
       const res = await fetch(`${API_BASE}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, role }),
+        body: JSON.stringify({ email: normalizedEmail, password, name, role }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, error: data.message || "Failed to sign up" };
+        return { success: false, error: data.error || data.message || "Failed to sign up" };
       }
 
       setToken(data.token);
@@ -145,13 +216,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("w3hire_auth_token", data.token);
       localStorage.setItem("w3hire_user", JSON.stringify(data.user));
 
-      return { success: true };
+      return { success: true, user: data.user };
     } catch (err: any) {
-      // Fallback offline mock signup
+      // Fallback offline mock signup: persist role mapping
+      try {
+        const storedUsers = JSON.parse(localStorage.getItem("w3hire_mock_registered_users") || "{}");
+        storedUsers[normalizedEmail] = { email: normalizedEmail, name, role };
+        localStorage.setItem("w3hire_mock_registered_users", JSON.stringify(storedUsers));
+      } catch (e) {}
+
       const mockUser: User = {
         id: `usr-${Date.now()}`,
-        email,
-        name: name || email.split("@")[0],
+        email: normalizedEmail,
+        name: name || normalizedEmail.split("@")[0],
         role: role,
         walletAddress: null,
       };
@@ -162,11 +239,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("w3hire_auth_token", mockToken);
       localStorage.setItem("w3hire_user", JSON.stringify(mockUser));
 
-      return { success: true };
+      return { success: true, user: mockUser };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (e) {
+        console.warn("Logout API notification failed", e);
+      }
+    }
     setUser(null);
     setToken(null);
     localStorage.removeItem("w3hire_auth_token");
@@ -250,7 +339,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateUserRole = (role: "CLIENT" | "FREELANCER") => {
+  const updateUserRole = (role: "CLIENT" | "FREELANCER" | "ADMIN") => {
     if (user) {
       const updated = { ...user, role };
       setUser(updated);

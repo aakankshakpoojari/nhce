@@ -11,9 +11,10 @@ import { env } from '../config/env.config';
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
-    walletAddress: string;
+    email?: string | null;
     role: string;
-    isPro: boolean;
+    walletAddress?: string | null;
+    isPro?: boolean;
   };
 }
 

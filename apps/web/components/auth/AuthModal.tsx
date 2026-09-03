@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { X, Lock, Mail, User, ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
+import { X, Lock, Mail, User, ShieldCheck, ArrowRight, Loader2, Sparkles, Shield } from "lucide-react";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export default function AuthModal({
   initialRole = "FREELANCER",
   onSuccess,
 }: AuthModalProps) {
+  const router = useRouter();
   const { login, signup } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [email, setEmail] = useState("");
@@ -30,6 +32,16 @@ export default function AuthModal({
 
   if (!isOpen) return null;
 
+  const handleRoleRedirect = (userRole?: "CLIENT" | "FREELANCER" | "ADMIN") => {
+    if (userRole === "ADMIN") {
+      router.push("/admin");
+    } else if (userRole === "CLIENT") {
+      router.push("/client");
+    } else {
+      router.push("/bounties");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -38,18 +50,20 @@ export default function AuthModal({
     if (mode === "signin") {
       const res = await login(email, password);
       setLoading(false);
-      if (res.success) {
+      if (res.success && res.user) {
         if (onSuccess) onSuccess();
         onClose();
+        handleRoleRedirect(res.user.role);
       } else {
         setError(res.error || "Failed to sign in.");
       }
     } else {
       const res = await signup(email, password, name, role);
       setLoading(false);
-      if (res.success) {
+      if (res.success && res.user) {
         if (onSuccess) onSuccess();
         onClose();
+        handleRoleRedirect(res.user.role);
       } else {
         setError(res.error || "Failed to create account.");
       }
@@ -223,10 +237,25 @@ export default function AuthModal({
           </button>
         </form>
 
-        <div className="mt-4 pt-4 border-t border-surface-border text-center text-xs text-muted">
+        <div className="mt-4 pt-4 border-t border-surface-border text-center text-xs text-muted space-y-2">
+          {mode === "signin" && (
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-[11px] text-muted">Admin Reviewer?</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("aakankshakpoojari265@gmail.com");
+                  setPassword("123456");
+                }}
+                className="text-[11px] font-mono text-moss hover:underline font-semibold"
+              >
+                Autofill (aakankshakpoojari265@gmail.com)
+              </button>
+            </div>
+          )}
           <p className="flex items-center justify-center gap-1">
             <ShieldCheck className="w-4 h-4 text-moss" />
-            <span>JWT Secured • You can link your Web3 wallet anytime</span>
+            <span>You can link your Web3 wallet anytime</span>
           </p>
         </div>
       </div>
