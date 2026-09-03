@@ -673,6 +673,19 @@ export class JobController {
           include: { client: true, freelancer: true, milestones: true, _count: { select: { applications: true } } }
         });
 
+        // Open the client <-> freelancer conversation for this job (idempotent).
+        const existingConversation = await tx.conversation.findUnique({ where: { jobId: id } });
+        if (!existingConversation) {
+          await tx.conversation.create({
+            data: {
+              jobId: id,
+              participants: {
+                create: [{ userId: job.clientId }, { userId: selectedFreelancerId }]
+              }
+            }
+          });
+        }
+
         return updatedJob;
       });
 
