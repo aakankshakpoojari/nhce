@@ -20,7 +20,7 @@ export default function MetaMaskModal({
 }: MetaMaskModalProps) {
   const router = useRouter();
   const { user, connectWallet } = useAuth();
-  const [step, setStep] = useState<"connect" | "signing" | "success" | "role_conflict" | "error">("connect");
+  const [step, setStep] = useState<"connect" | "signing" | "success" | "role_conflict" | "error" | "no_wallet">("connect");
   const [account, setAccount] = useState<string | null>(null);
   const [existingRole, setExistingRole] = useState<"client" | "freelancer" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -46,63 +46,78 @@ export default function MetaMaskModal({
   const targetRoute = role === "client" ? "/client" : "/bounties";
 
   const handleConnectWallet = async () => {
+    const eth = typeof window !== "undefined" ? (window as any).ethereum : undefined;
+
+    // No injected wallet — never fabricate an address; tell the user to install one.
+    if (!eth) {
+      setErrorMessage(
+        "No Web3 wallet detected. Install the MetaMask extension (or enable your browser's built-in wallet) and try again."
+      );
+      setStep("no_wallet");
+      return;
+    }
+
     try {
       setStep("signing");
       setErrorMessage("");
 
-      let userAddress = "0x71C3a7F9B1E48574B40B62E3e74dB826500F949A";
-
-      if (typeof window !== "undefined" && (window as any).ethereum) {
-        const eth = (window as any).ethereum;
-        const accounts = await eth.request({ method: "eth_requestAccounts" });
-        if (accounts && accounts.length > 0) {
-          userAddress = accounts[0];
-        }
-      } else {
-        // Simulated connection delay for dev testing
-        await new Promise((res) => setTimeout(res, 600));
+      const accounts: string[] = await eth.request({ method: "eth_requestAccounts" });
+      const userAddress = accounts?.[0];
+      if (!userAddress) {
+        setErrorMessage("No account was shared. Unlock your wallet and select an account to continue.");
+        setStep("error");
+        return;
       }
 
       const normalizedAddress = userAddress.toLowerCase();
 
-      // Validate wallet connection & role uniqueness via AuthContext
-      const res = await connectWallet(normalizedAddress);
+      // Optional ownership signature (best-effort; not verified server-side yet).
+      try {
+        const message = `Welcome to W3HIRE!\n\nAuthenticate as: ${roleTitle}\nWallet: ${userAddress}\nRole binding: permanent 1-account-1-role policy.\nNonce: ${Math.floor(Math.random() * 1000000)}`;
+        await eth.request({ method: "personal_sign", params: [message, userAddress] });
+      } catch (signErr: any) {
+        if (signErr?.code === 4001 || signErr?.code === "ACTION_REJECTED") {
+          setErrorMessage("Signature request rejected. Approve the signature to link your wallet.");
+          setStep("connect");
+          return;
+        }
+        console.warn("[wallet] signature skipped:", signErr?.code, signErr?.message);
+      }
 
+      // Persist the link to the user's profile via AuthContext -> backend.
+      const res = await connectWallet(normalizedAddress);
       if (!res.success) {
         setAccount(userAddress);
-        setErrorMessage(res.error || "Wallet is already linked to another account or role conflict detected.");
+        setErrorMessage(res.error || "This wallet could not be linked to your account.");
         setExistingRole(role === "client" ? "freelancer" : "client");
         setStep("role_conflict");
         return;
       }
 
-      // Optional signature for real MetaMask
-      if (typeof window !== "undefined" && (window as any).ethereum) {
-        const eth = (window as any).ethereum;
-        const message = `Welcome to W3HIRE!\n\nAuthenticate as: ${roleTitle}\nWallet: ${userAddress}\nRole binding: permanent 1-account-1-role policy.\nNonce: ${Math.floor(Math.random() * 1000000)}`;
-        try {
-          await eth.request({
-            method: "personal_sign",
-            params: [message, userAddress],
-          });
-        } catch (signErr: any) {
-          console.warn("Signature skipped:", signErr);
-        }
-      }
-
       setAccount(userAddress);
       setStep("success");
+      onSuccess?.(userAddress);
 
+      // Role-selection callers want to be routed into their workspace; the
+      // in-app "connect wallet" prompt just closes and lets the banner clear.
       if (onSuccess) {
-        onSuccess(userAddress);
+        setTimeout(() => router.push(targetRoute), 900);
+      } else {
+        setTimeout(() => onClose(), 900);
       }
-
-      setTimeout(() => {
-        router.push(targetRoute);
-      }, 900);
     } catch (err: any) {
-      console.error(err);
-      setErrorMessage(err.message || "Failed to connect MetaMask");
+      if (err?.code === 4001 || err?.code === "ACTION_REJECTED") {
+        setErrorMessage("Connection request rejected in your wallet.");
+        setStep("connect");
+        return;
+      }
+      if (err?.code === -32002) {
+        setErrorMessage("A wallet request is already pending — open your wallet extension to approve it.");
+        setStep("connect");
+        return;
+      }
+      console.warn("[wallet] connect failed:", err?.code, err?.message);
+      setErrorMessage(err?.message || err?.data?.message || "Failed to connect wallet.");
       setStep("error");
     }
   };
@@ -164,6 +179,13 @@ export default function MetaMaskModal({
         <div className="mt-6 space-y-4">
           {step === "connect" && (
             <>
+              {errorMessage && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center gap-2 text-left">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
               <div className="p-3.5 rounded-xl bg-background border border-surface-border text-xs text-muted space-y-2">
                 <div className="flex justify-between items-center text-foreground">
                   <span>Target Role:</span>
@@ -179,7 +201,7 @@ export default function MetaMaskModal({
                 onClick={handleConnectWallet}
                 className="w-full py-3.5 px-4 rounded-xl font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-lg shadow-[#84CC16]/20 flex items-center justify-center gap-2 text-sm"
               >
-                <span>Connect MetaMask</span>
+                <span>Connect Wallet</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </>
@@ -264,6 +286,33 @@ export default function MetaMaskModal({
                 className="w-full py-3 px-4 rounded-xl font-semibold bg-background hover:bg-moss text-foreground hover:text-background border border-surface-border hover:border-moss transition text-sm"
               >
                 Try Again
+              </button>
+            </div>
+          )}
+
+          {step === "no_wallet" && (
+            <div className="py-4 space-y-4 text-center">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-start gap-2 text-left">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+              <a
+                href="https://metamask.io/download/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 px-4 rounded-xl font-semibold bg-moss hover:bg-[#BEF264] text-background transition text-sm flex items-center justify-center gap-2"
+              >
+                <span>Get MetaMask</span>
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              <button
+                onClick={() => {
+                  setErrorMessage("");
+                  setStep("connect");
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-surface hover:bg-surface-hover border border-surface-border text-xs text-muted hover:text-foreground transition"
+              >
+                I've installed it — retry
               </button>
             </div>
           )}

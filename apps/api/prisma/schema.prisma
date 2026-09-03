@@ -76,6 +76,10 @@ model User {
   assignedJobs      Job[]            @relation("FreelancerJobs")
   applications      JobApplication[] @relation("FreelancerApplications")
   initiatedDisputes Dispute[]        @relation("InitiatedDisputes")
+
+  conversations           ConversationParticipant[] @relation("UserConversations")
+  sentMessages            Message[]                 @relation("SentMessages")
+  freelancerConversations Conversation[]            @relation("FreelancerConversations")
 }
 
 model Job {
@@ -98,6 +102,7 @@ model Job {
   milestones     Milestone[]
   applications   JobApplication[]
   disputes       Dispute[]
+  conversations  Conversation[]
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -183,4 +188,66 @@ model Admin {
   createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("admins")
+}
+
+// ---------------------------------------------------------------------------
+// Messaging
+// A Conversation is a job-scoped thread between the Job's client and ONE
+// freelancer (the `freelancerId` side; the client is the other participant).
+// `@@unique([jobId, freelancerId])` means a given (job, freelancer) pair always
+// resolves to the same conversation — no duplicates — while still allowing every
+// applicant on a job to have their own thread with the client. Both columns are
+// optional to leave room for future direct (job-less) threads.
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id           String                    @id @default(uuid())
+  jobId        String?
+  job          Job?                      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  freelancerId String?
+  freelancer   User?                     @relation("FreelancerConversations", fields: [freelancerId], references: [id], onDelete: Cascade)
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@unique([jobId, freelancerId])
+  @@index([jobId])
+  @@index([freelancerId])
+  @@index([updatedAt])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("UserConversations", fields: [userId], references: [id], onDelete: Cascade)
+
+  lastReadAt     DateTime?
+  joinedAt       DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  content        String
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  editedAt       DateTime?
+  deletedAt      DateTime?
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
 }

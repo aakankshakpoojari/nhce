@@ -22,7 +22,6 @@ import {
 import { motion } from "framer-motion";
 import ApplicantsModal, { Applicant } from "./components/ApplicantsModal";
 import EscrowCard, { EscrowItem } from "./components/EscrowCard";
-import WalletNoticeBanner from "@/components/ui/WalletNoticeBanner";
 import { fetchMyJobs, Job, formatBudget, formatDate, formatRelative, JOB_STATUS_LABELS, daysUntil } from "@/lib/api";
 
 export interface Project {
@@ -178,9 +177,6 @@ export default function ClientDashboardPage() {
 
       {/* Main Dashboard Body */}
       <main className="flex-1 min-h-screen pt-8 px-4 sm:px-8 max-w-7xl w-full mx-auto space-y-8 pb-12">
-        
-        {/* Wallet Notice Prompt */}
-        <WalletNoticeBanner role="client" />
         
         {/* Quick Stats */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">

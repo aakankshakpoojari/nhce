@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import CustomCursor from "@/components/animations/CustomCursor";
 import ClientNavbar from "./components/ClientNavbar";
+import GlobalWalletBanner from "@/components/ui/GlobalWalletBanner";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 interface ClientNotification {
@@ -69,6 +70,7 @@ export default function ClientLayout({
 
       {/* Page Content */}
       <div className="relative z-10 flex-1 flex flex-col">
+        <GlobalWalletBanner className="w-full max-w-7xl mx-auto px-4 sm:px-8 pt-8" />
         {children}
       </div>
     </div>
