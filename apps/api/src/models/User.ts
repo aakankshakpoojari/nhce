@@ -1,7 +1,7 @@
 /**
  * @file User.ts
  * @description User profile & Authentication data structure interfaces.
- * Defines wallet-based SIWE fields, roles, ratings, and subscription tracking parameters.
+ * Defines authentication fields, roles, ratings, and subscription tracking parameters.
  */
 
 export enum UserRole {
@@ -12,13 +12,13 @@ export enum UserRole {
 
 export interface IUserProfile {
   id: string;
-  email?: string;
-  walletAddress: string;
-  siweNonce?: string;
-  role: UserRole;
-  name?: string;
-  bio?: string;
-  location?: string;
+  email?: string | null;
+  walletAddress?: string | null;
+  siweNonce?: string | null;
+  role: UserRole | string;
+  name?: string | null;
+  bio?: string | null;
+  location?: string | null;
   rating: number;
   portfolioLinks: string[];
   isPro: boolean;
@@ -28,9 +28,16 @@ export interface IUserProfile {
   updatedAt: Date;
 }
 
-export interface ISiweVerifyRequest {
-  message: string;
-  signature: string;
+export interface ISignupDTO {
+  name?: string;
+  email: string;
+  password: string;
+  role?: 'CLIENT' | 'FREELANCER' | 'JUROR';
+}
+
+export interface ILoginDTO {
+  email: string;
+  password: string;
 }
 
 export interface IAuthResponse {

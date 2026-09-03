@@ -46,7 +46,8 @@ enum VoteChoice {
 model User {
   id                String      @id @default(uuid())
   email             String?     @unique
-  walletAddress     String      @unique
+  passwordHash      String?
+  walletAddress     String?     @unique
   siweNonce         String?
   role              Role        @default(FREELANCER)
   name              String?
