@@ -57,9 +57,11 @@ export default function LandingPage() {
   const [morphIndex, setMorphIndex] = useState(0);
   const [isHoveringMorphChar, setIsHoveringMorphChar] = useState(false);
 
-  // Intro spin state (scroll is locked until 360 spin finishes)
+  // 4-Phase State Machine: 'INTRO_ASSEMBLED' | 'INTRO_SCATTERING' | 'INTRO_SCATTERED' | 'INTRO_REASSEMBLING'
+  const [introState, setIntroState] = useState<'INTRO_ASSEMBLED' | 'INTRO_SCATTERING' | 'INTRO_SCATTERED' | 'INTRO_REASSEMBLING'>('INTRO_ASSEMBLED');
   const [isIntroSpinning, setIsIntroSpinning] = useState(true);
   const [introRotation, setIntroRotation] = useState(0);
+  const [scatterProgress, setScatterProgress] = useState(0);
 
   // 1s Character Morphing Interval Loop
   useEffect(() => {
@@ -69,15 +71,14 @@ export default function LandingPage() {
     return () => clearInterval(morphTimer);
   }, []);
 
-  // Intro rotation effect
+  // Intro 360-degree rotation effect on initial load
   useEffect(() => {
     const startTime = performance.now();
-    const duration = 1400; // 1.4 seconds for initial spin
+    const duration = 1400; // 1.4 seconds initial spin
 
     const animateIntroSpin = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const currentDeg = easeOut * 360;
       setIntroRotation(currentDeg);
@@ -90,30 +91,140 @@ export default function LandingPage() {
     };
 
     const animId = requestAnimationFrame(animateIntroSpin);
+    return () => cancelAnimationFrame(animId);
+  }, []);
 
+  // 1. Forward Scatter Animation: ASSEMBLED -> SCATTERED (0 -> 1)
+  const triggerScatterAnimation = () => {
+    setIntroState('INTRO_SCATTERING');
+    const startTime = performance.now();
+    const duration = 1100; // Choreographed forward explosion timing
+
+    const animateForward = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Quintic ease-out deceleration
+      const eased = 1 - Math.pow(1 - progress, 4);
+      setScatterProgress(eased);
+
+      if (progress < 1) {
+        requestAnimationFrame(animateForward);
+      } else {
+        // Animation timeline complete callback: unlock scroll
+        setScatterProgress(1);
+        setIntroState('INTRO_SCATTERED');
+      }
+    };
+
+    requestAnimationFrame(animateForward);
+  };
+
+  // 2. Reverse Reassembly Animation: SCATTERED -> ASSEMBLED (1 -> 0)
+  const triggerReassembleAnimation = () => {
+    setIntroState('INTRO_REASSEMBLING');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    const startTime = performance.now();
+    const duration = 1100; // Exact same reverse choreography timing
+
+    const animateReverse = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Exact reverse easing: smoothly reconstructs characters to original position
+      const eased = Math.pow(1 - progress, 4);
+      setScatterProgress(eased);
+
+      if (progress < 1) {
+        requestAnimationFrame(animateReverse);
+      } else {
+        // Reverse timeline complete callback: restore assembled state & unlock
+        setScatterProgress(0);
+        setIntroState('INTRO_ASSEMBLED');
+      }
+    };
+
+    requestAnimationFrame(animateReverse);
+  };
+
+  // Intercept scroll/touch gestures deterministically
+  useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (isIntroSpinning) e.preventDefault();
+      // While animating in either direction, lock and ignore all gestures to prevent stacking/restarting
+      if (introState === 'INTRO_SCATTERING' || introState === 'INTRO_REASSEMBLING') {
+        e.preventDefault();
+        return;
+      }
+
+      // DOWNWARD SCROLL at assembled landing state triggers scattering
+      if (introState === 'INTRO_ASSEMBLED') {
+        if (e.deltaY > 0) {
+          e.preventDefault();
+          triggerScatterAnimation();
+        } else {
+          e.preventDefault();
+        }
+        return;
+      }
+
+      // UPWARD SCROLL: Only trigger reverse animation if user is at the top/intro boundary (scrollY <= 10)
+      if (introState === 'INTRO_SCATTERED') {
+        const currentY = window.scrollY || document.documentElement.scrollTop || 0;
+        if (currentY <= 10 && e.deltaY < 0) {
+          e.preventDefault();
+          triggerReassembleAnimation();
+        }
+        // If currentY > 10, do NOT intercept: normal upward scrolling through the website works normally
+      }
+    };
+
+    let touchStartY = 0;
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (isIntroSpinning) e.preventDefault();
+      if (introState === 'INTRO_SCATTERING' || introState === 'INTRO_REASSEMBLING') {
+        e.preventDefault();
+        return;
+      }
+
+      if (introState === 'INTRO_ASSEMBLED') {
+        const deltaY = touchStartY - e.touches[0].clientY;
+        if (deltaY > 10) {
+          e.preventDefault();
+          triggerScatterAnimation();
+        }
+        return;
+      }
+
+      if (introState === 'INTRO_SCATTERED') {
+        const currentY = window.scrollY || document.documentElement.scrollTop || 0;
+        const deltaY = touchStartY - e.touches[0].clientY;
+        // User swiping down (scrolling up) while at the very top
+        if (currentY <= 10 && deltaY < -10) {
+          e.preventDefault();
+          triggerReassembleAnimation();
+        }
+      }
     };
 
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
 
     return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
     };
-  }, [isIntroSpinning]);
+  }, [introState]);
 
-  // Handle scroll and mouse parallax
+  // Handle normal scroll and mouse parallax
   useEffect(() => {
     const handleScroll = () => {
-      if (!isIntroSpinning) {
+      if (introState === 'INTRO_SCATTERED') {
         setScrollY(window.scrollY);
+      } else {
+        setScrollY(0);
       }
     };
 
@@ -124,13 +235,13 @@ export default function LandingPage() {
       setMousePos({ x, y });
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isIntroSpinning]);
+  }, [introState]);
 
   // Active rotation angle
   const activeRotation = isIntroSpinning
@@ -140,19 +251,20 @@ export default function LandingPage() {
   // Active morphing character (overridden to $ if explicitly hovered)
   const currentMorphChar = isHoveringMorphChar ? "$" : morphSequence[morphIndex];
 
-  // SCROLL-TRIGGERED KINETIC SCATTER VECTORS FOR "WE HIRE":
-  // As scrollY increases (0 to 350px), characters explode/scatter outwards with staggered velocity
-  const scrollProgress = Math.min(scrollY / 320, 1);
-  const isScattered = scrollProgress > 0.15;
+  // Combined progress: scatterProgress during intro, plus subtle scroll parallax when complete
+  const effectiveProgress = introState === 'INTRO_SCATTERED'
+    ? Math.min(1 + scrollY / 400, 1.8)
+    : scatterProgress;
+  const isScattered = scatterProgress > 0.15 || introState === 'INTRO_SCATTERED';
 
-  // Staggered particle scatter offsets
+  // Staggered particle scatter offsets (identical forward and reverse vectors)
   const charScatterOffsets = [
-    { x: -scrollProgress * 320, y: -scrollProgress * 120, rotate: -scrollProgress * 45, opacity: 1 - scrollProgress * 0.4 }, // W
-    { x: -scrollProgress * 220, y: -scrollProgress * 160, rotate: scrollProgress * 35, opacity: 1 - scrollProgress * 0.4 },  // E / 3 / $
-    { x: scrollProgress * 140, y: -scrollProgress * 120, rotate: -scrollProgress * 30, opacity: 1 - scrollProgress * 0.4 },  // H
-    { x: scrollProgress * 220, y: -scrollProgress * 160, rotate: scrollProgress * 40, opacity: 1 - scrollProgress * 0.4 },   // I
-    { x: scrollProgress * 300, y: -scrollProgress * 140, rotate: -scrollProgress * 35, opacity: 1 - scrollProgress * 0.4 },  // R
-    { x: scrollProgress * 380, y: -scrollProgress * 180, rotate: scrollProgress * 50, opacity: 1 - scrollProgress * 0.4 },   // E
+    { x: -effectiveProgress * 320, y: -effectiveProgress * 120, rotate: -effectiveProgress * 45, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) }, // W
+    { x: -effectiveProgress * 220, y: -effectiveProgress * 160, rotate: effectiveProgress * 35, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },  // E / 3 / $
+    { x: effectiveProgress * 140, y: -effectiveProgress * 120, rotate: -effectiveProgress * 30, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },  // H
+    { x: effectiveProgress * 220, y: -effectiveProgress * 160, rotate: effectiveProgress * 40, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },   // I
+    { x: effectiveProgress * 300, y: -effectiveProgress * 140, rotate: -effectiveProgress * 35, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },  // R
+    { x: effectiveProgress * 380, y: -effectiveProgress * 180, rotate: effectiveProgress * 50, opacity: Math.max(0.2, 1 - effectiveProgress * 0.4) },   // E
   ];
 
   const handleRoleAuth = (role: "client" | "freelancer") => {
@@ -197,7 +309,7 @@ export default function LandingPage() {
   return (
     <div
       className={`min-h-screen bg-transparent text-foreground flex flex-col justify-between selection:bg-moss selection:text-background ${
-        isIntroSpinning ? "overflow-hidden h-screen select-none" : "overflow-x-hidden"
+        introState !== 'INTRO_SCATTERED' ? "overflow-hidden h-screen select-none" : "overflow-x-hidden"
       }`}
     >
       {/* Sticky Navbar (Docked Segment Target) */}
