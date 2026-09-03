@@ -32,7 +32,7 @@ interface AuthContextType {
   updateUserRole: (role: "CLIENT" | "FREELANCER" | "ADMIN") => void;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "") + "/api";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout();
       }
     } catch (err) {
-      console.warn("Could not fetch user profile from API, using cached state if present.", err);
+      console.warn("Could not fetch user profile from API.", err);
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, error: data.message || "Failed to log in" };
+        return { success: false, error: data.error || data.message || "Failed to log in" };
       }
 
       setToken(data.token);
@@ -208,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, error: data.message || "Failed to sign up" };
+        return { success: false, error: data.error || data.message || "Failed to sign up" };
       }
 
       setToken(data.token);
@@ -243,7 +243,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (e) {
+        console.warn("Logout API notification failed", e);
+      }
+    }
     setUser(null);
     setToken(null);
     localStorage.removeItem("w3hire_auth_token");
