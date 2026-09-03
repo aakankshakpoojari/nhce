@@ -275,7 +275,7 @@ export class JobController {
       }
 
       let finalEscrowAddress = escrowAddress;
-      let vaultResult = null;
+      let vaultResult: { escrowAddress: string; txHash: string } | null = null;
 
       // If client provides a pre-deployed escrowAddress from Sepolia Devnet, link directly
       if (!finalEscrowAddress) {
