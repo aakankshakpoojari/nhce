@@ -134,9 +134,15 @@ export class ConversationController {
 
   /**
    * POST /api/conversations
-   * Body: { jobId }
-   * Open (or create) the conversation for a job. Idempotent: a given job always
-   * resolves to the same conversation. Caller must be the job's client or freelancer.
+   * Body: { jobId, freelancerId? }
+   * Open (or create) the job-scoped thread between the job's client and one
+   * freelancer. Idempotent: a given (job, freelancer) pair always resolves to the
+   * same conversation. Access is a mutual opt-in — the client posted the job and
+   * the freelancer applied to (or was selected for) it; cold contact is rejected.
+   *  - freelancer caller: the thread is with themselves; they must have applied
+   *    or been selected.
+   *  - client caller: pass `freelancerId` to target an applicant, or omit it to
+   *    default to the selected freelancer.
    */
   public async createOrGetConversation(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -146,6 +152,8 @@ export class ConversationController {
       }
 
       const jobId = typeof req.body?.jobId === 'string' ? req.body.jobId.trim() : '';
+      const requestedFreelancerId =
+        typeof req.body?.freelancerId === 'string' ? req.body.freelancerId.trim() : '';
       if (!jobId) {
         res.status(400).json({ error: 'jobId is required' });
         return;
@@ -161,35 +169,60 @@ export class ConversationController {
       }
 
       const isClient = job.clientId === req.user.id;
-      const isFreelancer = !!job.freelancerId && job.freelancerId === req.user.id;
-      if (!isClient && !isFreelancer && req.user.role !== 'ADMIN') {
-        res.status(403).json({ error: 'Forbidden: You are not part of this job' });
-        return;
+      const isAdmin = req.user.role === 'ADMIN';
+
+      let targetFreelancerId: string;
+      if (isClient || isAdmin) {
+        targetFreelancerId = requestedFreelancerId || job.freelancerId || '';
+        if (!targetFreelancerId) {
+          res.status(400).json({
+            error: 'freelancerId is required to open a conversation for this job',
+          });
+          return;
+        }
+      } else {
+        // Non-client caller: the thread is with themselves.
+        targetFreelancerId = req.user.id;
+        if (requestedFreelancerId && requestedFreelancerId !== req.user.id) {
+          res.status(403).json({ error: 'Forbidden: You can only open your own conversation' });
+          return;
+        }
       }
 
-      if (!job.freelancerId) {
-        res.status(409).json({
-          error: 'A conversation opens once a freelancer has been selected for this job',
+      // The freelancer side must have a relationship with the job.
+      if (targetFreelancerId !== job.freelancerId) {
+        const application = await prisma.jobApplication.findUnique({
+          where: { jobId_freelancerId: { jobId, freelancerId: targetFreelancerId } },
+          select: { id: true },
         });
-        return;
+        if (!application) {
+          if (isClient || isAdmin) {
+            res.status(404).json({ error: 'That freelancer has not applied to this job' });
+          } else {
+            res.status(403).json({ error: 'Forbidden: Apply to this job before messaging the client' });
+          }
+          return;
+        }
       }
 
-      const existing = await prisma.conversation.findUnique({ where: { jobId } });
+      const key = { jobId_freelancerId: { jobId, freelancerId: targetFreelancerId } };
+      const existing = await prisma.conversation.findUnique({ where: key });
 
       let created = false;
       if (!existing) {
         await prisma.conversation.create({
           data: {
             jobId,
+            freelancerId: targetFreelancerId,
             participants: {
-              create: [{ userId: job.clientId }, { userId: job.freelancerId }],
+              create: [{ userId: job.clientId }, { userId: targetFreelancerId }],
             },
           },
         });
         created = true;
       }
 
-      const conversation = await prisma.conversation.findUnique({ where: { jobId } });
+      const conversation = await prisma.conversation.findUnique({ where: key });
       const dto = await this.toConversationDTO(conversation!.id, req.user.id);
       res.status(created ? 201 : 200).json({ conversation: dto, created });
     } catch (error: any) {

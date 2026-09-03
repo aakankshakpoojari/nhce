@@ -52,23 +52,37 @@ export function initSocket(httpServer: HttpServer): SocketIOServer {
     }
   });
 
+  /**
+   * Ensure this socket is in the conversation room, verifying DB membership.
+   * Idempotent and self-healing: safe to call on every relevant event so a
+   * dropped/raced `conversation:join` can never permanently break realtime.
+   */
+  const ensureMember = async (socket: Socket, conversationId: string): Promise<boolean> => {
+    if (socket.rooms.has(conversationRoom(conversationId))) return true;
+    const participant = await prisma.conversationParticipant.findUnique({
+      where: { conversationId_userId: { conversationId, userId: socket.data.userId } },
+    });
+    if (!participant) return false;
+    socket.join(conversationRoom(conversationId));
+    return true;
+  };
+
   io.on('connection', (socket: Socket) => {
     const userId: string = socket.data.userId;
 
     // Personal room — receives conversation-list level events (e.g. new message
     // in a thread the user is not currently viewing).
     socket.join(userRoom(userId));
+    console.log(`[Socket] connected user=${userId} id=${socket.id}`);
 
     // Join a conversation thread after verifying membership against the DB.
     socket.on('conversation:join', async (conversationId: unknown) => {
       if (typeof conversationId !== 'string' || !conversationId) return;
       try {
-        const participant = await prisma.conversationParticipant.findUnique({
-          where: { conversationId_userId: { conversationId, userId } },
-        });
-        if (participant) socket.join(conversationRoom(conversationId));
-      } catch {
-        /* ignore — client will still get events via its user room / REST resync */
+        const joined = await ensureMember(socket, conversationId);
+        console.log(`[Socket] join conv=${conversationId} user=${userId} -> ${joined ? 'ok' : 'denied'}`);
+      } catch (err) {
+        console.error(`[Socket] join failed conv=${conversationId} user=${userId}:`, err);
       }
     });
 
@@ -78,18 +92,29 @@ export function initSocket(httpServer: HttpServer): SocketIOServer {
       }
     });
 
-    // Ephemeral typing indicator — never touches the DB. Only relayed to peers in
-    // a room the socket has already been admitted to.
-    socket.on('typing', (payload: unknown) => {
+    // Ephemeral typing indicator — never touches the DB beyond the membership
+    // check. Relayed only to the other participant(s) in the thread.
+    socket.on('typing', async (payload: unknown) => {
       const data = payload as { conversationId?: string; isTyping?: boolean } | null;
       const conversationId = data?.conversationId;
       if (typeof conversationId !== 'string' || !conversationId) return;
-      if (!socket.rooms.has(conversationRoom(conversationId))) return;
-      socket.to(conversationRoom(conversationId)).emit('typing', {
-        conversationId,
-        userId,
-        isTyping: Boolean(data?.isTyping),
-      });
+      try {
+        if (!(await ensureMember(socket, conversationId))) {
+          console.log(`[Socket] typing dropped (not a member) conv=${conversationId} user=${userId}`);
+          return;
+        }
+        socket.to(conversationRoom(conversationId)).emit('typing', {
+          conversationId,
+          userId,
+          isTyping: Boolean(data?.isTyping),
+        });
+      } catch (err) {
+        console.error(`[Socket] typing relay failed conv=${conversationId} user=${userId}:`, err);
+      }
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log(`[Socket] disconnected user=${userId} id=${socket.id} (${reason})`);
     });
   });
 

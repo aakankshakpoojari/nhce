@@ -448,6 +448,22 @@ export class JobController {
           where: { id: req.user!.id },
           data: { jobsAppliedCount: { increment: 1 } }
         });
+        // Open the client <-> applicant conversation so scope can be discussed
+        // before selection (idempotent per job/freelancer pair).
+        const existingConversation = await tx.conversation.findUnique({
+          where: { jobId_freelancerId: { jobId: id, freelancerId: req.user!.id } }
+        });
+        if (!existingConversation) {
+          await tx.conversation.create({
+            data: {
+              jobId: id,
+              freelancerId: req.user!.id,
+              participants: {
+                create: [{ userId: job.clientId }, { userId: req.user!.id }]
+              }
+            }
+          });
+        }
         return created;
       });
 
@@ -674,11 +690,14 @@ export class JobController {
         });
 
         // Open the client <-> freelancer conversation for this job (idempotent).
-        const existingConversation = await tx.conversation.findUnique({ where: { jobId: id } });
+        const existingConversation = await tx.conversation.findUnique({
+          where: { jobId_freelancerId: { jobId: id, freelancerId: selectedFreelancerId } }
+        });
         if (!existingConversation) {
           await tx.conversation.create({
             data: {
               jobId: id,
+              freelancerId: selectedFreelancerId,
               participants: {
                 create: [{ userId: job.clientId }, { userId: selectedFreelancerId }]
               }
