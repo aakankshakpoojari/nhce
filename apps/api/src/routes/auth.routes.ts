@@ -15,5 +15,7 @@ router.post('/logout', (req, res) => authController.logout(req, res));
 router.get('/me', authenticateToken, (req, res) => authController.getMe(req, res));
 router.get('/profile', authenticateToken, (req, res) => authController.getProfile(req, res));
 router.put('/profile', authenticateToken, (req, res) => authController.updateProfile(req, res));
+router.post('/connect-wallet', authenticateToken, (req, res) => authController.connectWallet(req, res));
+router.post('/disconnect-wallet', authenticateToken, (req, res) => authController.disconnectWallet(req, res));
 
 export default router;

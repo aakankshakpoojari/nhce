@@ -3,15 +3,12 @@
 import { detailedClients } from "@/lib/mock-data";
 import { StarIcon } from "@heroicons/react/20/solid";
 import { CheckBadgeIcon } from "@heroicons/react/24/outline";
-import WalletNoticeBanner from "@/components/ui/WalletNoticeBanner";
 
 export default function ClientProfilePage() {
   const clientStats = detailedClients["layer2dao"];
 
   return (
     <main className="flex-1 w-full mx-auto px-6 py-8 space-y-8">
-      <WalletNoticeBanner role="client" />
-
       <div className="flex flex-col items-start mb-6">
         <h1 className="text-3xl font-extrabold tracking-tight text-foreground mb-2">
           Client Profile

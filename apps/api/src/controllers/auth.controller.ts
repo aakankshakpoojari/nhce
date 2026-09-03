@@ -232,6 +232,106 @@ export class AuthController {
   }
 
   /**
+   * POST /api/auth/connect-wallet
+   * Link a MetaMask (EVM) wallet address to the authenticated user's profile.
+   * The address is unique platform-wide: linking one already held by another
+   * account is rejected.
+   */
+  public async connectWallet(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const raw = typeof req.body?.walletAddress === 'string' ? req.body.walletAddress.trim() : '';
+      if (!raw) {
+        res.status(400).json({ error: 'walletAddress is required' });
+        return;
+      }
+
+      const walletAddress = raw.toLowerCase();
+      if (!/^0x[a-f0-9]{40}$/.test(walletAddress)) {
+        res.status(400).json({ error: 'Invalid Ethereum wallet address' });
+        return;
+      }
+
+      const holder = await prisma.user.findUnique({ where: { walletAddress } });
+      if (holder && holder.id !== req.user.id) {
+        res.status(409).json({
+          error: 'Wallet already linked',
+          message: 'This wallet address is already linked to another account'
+        });
+        return;
+      }
+
+      try {
+        const user = await prisma.user.update({
+          where: { id: req.user.id },
+          data: { walletAddress }
+        });
+        res.json(this.serializeUser(user));
+      } catch (err: any) {
+        if (err?.code === 'P2002') {
+          res.status(409).json({
+            error: 'Wallet already linked',
+            message: 'This wallet address is already linked to another account'
+          });
+          return;
+        }
+        throw err;
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to connect wallet', message: error.message });
+    }
+  }
+
+  /**
+   * POST /api/auth/disconnect-wallet
+   * Remove the wallet address from the authenticated user's profile.
+   */
+  public async disconnectWallet(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const user = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { walletAddress: null }
+      });
+
+      res.json(this.serializeUser(user));
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to disconnect wallet', message: error.message });
+    }
+  }
+
+  /** Public-facing user shape, matching GET /api/auth/me. */
+  private serializeUser(user: {
+    id: string; email: string | null; name: string | null; role: string;
+    walletAddress: string | null; bio: string | null; location: string | null;
+    rating: number; portfolioLinks: string[]; isPro: boolean;
+    jobsPostedCount: number; jobsAppliedCount: number;
+  }) {
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      walletAddress: user.walletAddress,
+      bio: user.bio,
+      location: user.location,
+      rating: user.rating,
+      portfolioLinks: user.portfolioLinks,
+      isPro: user.isPro,
+      jobsPostedCount: user.jobsPostedCount,
+      jobsAppliedCount: user.jobsAppliedCount
+    };
+  }
+
+  /**
    * PUT /api/auth/profile
    * Update user profile details (role, name, bio, location, portfolio links)
    */
