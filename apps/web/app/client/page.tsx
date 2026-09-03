@@ -182,25 +182,8 @@ export default function ClientDashboardPage() {
         {/* Wallet Notice Prompt */}
         <WalletNoticeBanner role="client" />
         
-        {/* Monthly Credits & Pro Banner */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          
-          {/* Credit Status Card */}
-          <div className="p-6 rounded-2xl bg-surface border border-surface-border flex flex-col justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-muted uppercase">Monthly Free Allowance</span>
-                <span className="w-2 h-2 rounded-full bg-moss" />
-              </div>
-              <div className="text-2xl font-black text-foreground font-mono">
-                <span className="text-moss">CREDITS IN NAV</span>
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-surface-border text-xs text-muted flex justify-between items-center">
-              <span>View credits limit top right</span>
-            </div>
-          </div>
-
+        {/* Quick Stats */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Active Escrow TVL */}
           <div className="p-6 rounded-2xl bg-surface border border-surface-border flex flex-col justify-between">
             <div className="space-y-1">

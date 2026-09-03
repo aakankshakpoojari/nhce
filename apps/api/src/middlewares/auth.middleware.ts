@@ -39,3 +39,27 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
     return;
   }
 }
+
+/**
+ * Middleware to attach the authenticated user when a valid Bearer JWT is present.
+ * Unlike authenticateToken, requests without a token (or with an invalid one)
+ * continue as anonymous — used on publicly-browsable routes that must still
+ * hide owner-private records (e.g. draft jobs).
+ */
+export function optionalAuthenticate(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, env.JWT_SECRET) as AuthenticatedRequest['user'];
+    req.user = decoded;
+  } catch {
+    // Invalid or expired token — treat the request as anonymous.
+  }
+  next();
+}

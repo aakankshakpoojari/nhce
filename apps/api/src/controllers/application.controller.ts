@@ -20,6 +20,10 @@ export class ApplicationController {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
+      if (req.user.role !== 'FREELANCER' && req.user.role !== 'ADMIN') {
+        res.status(403).json({ error: 'Forbidden: Only freelancer accounts can view applications' });
+        return;
+      }
 
       const applications = await prisma.jobApplication.findMany({
         where: { freelancerId: req.user.id },

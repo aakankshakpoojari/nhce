@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal, AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import JobCard from "@/components/JobCard";
@@ -34,7 +33,6 @@ const DEFAULT_FILTERS: Filters = {
 export default function BountiesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
-  const [isPro, setIsPro] = useState(false);
 
   const recentEarners = [
     { name: "0xSam...", amount: "$4,500", project: "DeFi Auditing" },
@@ -47,10 +45,6 @@ export default function BountiesPage() {
     { action: "Escrow Funded", title: "Smart Contract Audit", time: "1h ago" },
     { action: "Freelancer Hired", title: "Rust Protocol Engineer", time: "2h ago" }
   ];
-
-  useEffect(() => {
-    setIsPro(localStorage.getItem("w3hire_is_pro") === "true");
-  }, []);
 
   const { data: jobsData, isLoading, error, reload: loadJobs } = useApiFetch<Job[]>(() =>
     fetchJobs().then((d) => d.jobs || [])
@@ -123,7 +117,7 @@ export default function BountiesPage() {
       </div>
 
       {/* Stats Banner */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-6 rounded-2xl bg-surface border border-surface-border flex flex-col justify-between">
           <span className="text-xs font-mono text-muted uppercase">Open Positions</span>
           <div className="text-2xl font-black text-foreground font-mono mt-2">{jobs.length}</div>
@@ -135,20 +129,6 @@ export default function BountiesPage() {
             {jobs.length > 0 ? formatBudget({ budget: totalValueLocked, tokenSymbol: "USDC" }) : "—"}
           </div>
           <div className="mt-4 pt-3 border-t border-surface-border text-xs text-[#22C55E]">Backed by on-chain escrow</div>
-        </div>
-        <div className="p-6 rounded-2xl bg-surface border border-surface-border flex flex-col justify-between">
-          <div className="space-y-1">
-            <span className={`text-xs font-mono uppercase ${isPro ? "text-moss" : "text-muted"}`}>Freelancer Tier</span>
-            <div className="text-lg font-bold text-foreground">
-              {isPro ? "Pro Member" : "Standard Member"}
-            </div>
-          </div>
-          <Link
-            href="/pro"
-            className="mt-4 py-2.5 px-4 rounded-xl bg-moss hover:bg-[#BEF264] text-background font-semibold text-xs uppercase tracking-wider transition text-center block w-full"
-          >
-            {isPro ? "View Benefits" : "Upgrade to Pro"}
-          </Link>
         </div>
       </section>
 

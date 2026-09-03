@@ -190,6 +190,10 @@ export class JobController {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
+      if (req.user.role !== 'CLIENT' && req.user.role !== 'ADMIN') {
+        res.status(403).json({ error: 'Forbidden: Only client accounts can manage job postings' });
+        return;
+      }
 
       const jobs = await prisma.job.findMany({
         where: { clientId: req.user.id },
@@ -226,6 +230,15 @@ export class JobController {
       if (!job) {
         res.status(404).json({ error: 'Job not found' });
         return;
+      }
+
+      // Draft jobs are private — only the owning client (or an admin) may view them.
+      if (job.status === JobStatus.DRAFT) {
+        const isOwnerOrAdmin = !!req.user && (req.user.id === job.clientId || req.user.role === 'ADMIN');
+        if (!isOwnerOrAdmin) {
+          res.status(404).json({ error: 'Job not found' });
+          return;
+        }
       }
 
       res.json({ job });
@@ -686,6 +699,61 @@ export class JobController {
         return;
       }
       res.status(500).json({ error: 'Failed to select freelancer', message: error.message });
+    }
+  }
+
+  /**
+   * DELETE /api/jobs/:id
+   * Delete an owned job posting — owner only.
+   * Only DRAFT / PUBLISHED / OPEN jobs can be deleted (still in discovery).
+   * Once a job has entered an active hiring/contract/escrow flow it cannot be removed.
+   */
+  public async deleteJob(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      if (req.user.role !== 'CLIENT' && req.user.role !== 'ADMIN') {
+        res.status(403).json({ error: 'Forbidden: Only clients can delete job postings' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const job = await prisma.job.findUnique({
+        where: { id },
+        include: { applications: { where: { status: ApplicationStatus.ACCEPTED }, select: { id: true } } }
+      });
+      if (!job) {
+        res.status(404).json({ error: 'Job not found' });
+        return;
+      }
+      if (job.clientId !== req.user.id && req.user.role !== 'ADMIN') {
+        res.status(403).json({ error: 'Forbidden: Only the job owner can delete this job' });
+        return;
+      }
+
+      const DELETABLE_STATUSES: JobStatus[] = [JobStatus.DRAFT, JobStatus.PUBLISHED, JobStatus.OPEN];
+      if (!DELETABLE_STATUSES.includes(job.status)) {
+        res.status(409).json({
+          error: `Job with status ${job.status} is in an active hiring/escrow flow and cannot be deleted`
+        });
+        return;
+      }
+      if (job.applications.length > 0) {
+        res.status(409).json({ error: 'Cannot delete a job with an accepted application' });
+        return;
+      }
+
+      await prisma.$transaction([
+        prisma.jobApplication.deleteMany({ where: { jobId: id } }),
+        prisma.milestone.deleteMany({ where: { jobId: id } }),
+        prisma.job.delete({ where: { id } })
+      ]);
+
+      res.json({ message: 'Job deleted successfully', id });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to delete job', message: error.message });
     }
   }
 

@@ -17,7 +17,8 @@ export default function EditJobPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { data, isLoading, error } = useApiFetch<Job | null>(async () => {
-    const response = await fetchJob(id);
+    // Draft jobs are private to the owner — fetch with the authenticated token.
+    const response = await fetchJob(id, getAuthToken());
     return response.job;
   }, [id]);
   const job = data ?? null;
