@@ -48,8 +48,8 @@ export default function ClientNavbar({
 
   const clientNavLinks = [
     { name: "Overview & Projects", href: "/client" },
+    { name: "My Jobs", href: "/client/jobs" },
     { name: "Browse Talent", href: "/client/freelancers" },
-    { name: "Escrow Vaults", href: "/client#escrows" },
     { name: "Marketplace", href: "/bounties" },
   ];
 
@@ -114,13 +114,13 @@ export default function ClientNavbar({
           </div>
 
           {/* Post Work CTA */}
-          <button
-            onClick={onPostProjectClick}
+          <Link
+            href="/client/jobs/new"
             className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Post Work</span>
-          </button>
+            <span>Post Job</span>
+          </Link>
 
           {/* Notifications */}
           <div className="relative">

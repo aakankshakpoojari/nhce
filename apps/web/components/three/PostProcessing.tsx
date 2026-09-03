@@ -11,7 +11,7 @@ export default function PostProcessingEffects() {
   return (
     <EffectComposer>
       <Bloom
-        threshold={0.75}
+        luminanceThreshold={0.75}
         intensity={0.5}
         luminanceSmoothing={0.9}
         mipmapBlur
