@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import ApplicantsModal, { Applicant } from "./components/ApplicantsModal";
 import EscrowCard, { EscrowItem } from "./components/EscrowCard";
 import WalletNoticeBanner from "@/components/ui/WalletNoticeBanner";
+import { fetchMyJobs, Job, formatBudget, formatDate, formatRelative, JOB_STATUS_LABELS, daysUntil } from "@/lib/api";
 
 export interface Project {
   id: string;
@@ -44,6 +45,7 @@ export default function ClientDashboardPage() {
 
   // Dynamic state: initially empty (no hardcoded projects)
   const [projects, setProjects] = useState<Project[]>([]);
+  const [realJobs, setRealJobs] = useState<Job[]>([]);
   const [escrows, setEscrows] = useState<EscrowItem[]>([]);
 
   const topFreelancers = [
@@ -91,7 +93,14 @@ export default function ClientDashboardPage() {
           console.error(e);
         }
       }
-      
+      // Load real jobs from the backend marketplace API
+      const token = localStorage.getItem("w3hire_auth_token");
+      if (token) {
+        fetchMyJobs(token)
+          .then((data) => setRealJobs(data.jobs || []))
+          .catch((e) => console.warn("Could not load jobs from API", e));
+      }
+
       window.addEventListener("w3hire_projects_updated", loadProjects);
       return () => window.removeEventListener("w3hire_projects_updated", loadProjects);
     }
@@ -217,11 +226,11 @@ export default function ClientDashboardPage() {
             </div>
             {/* Using window event to trigger modal open handled in layout */}
             <button
-              onClick={() => window.dispatchEvent(new Event('client_state_updated'))}
+              onClick={() => router.push("/client/jobs/new")}
               className="mt-4 py-2.5 px-4 rounded-xl bg-moss hover:bg-[#BEF264] text-background font-semibold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-md shadow-[#84CC16]/20"
             >
               <Plus className="w-4 h-4" />
-              <span>Use Navbar Button</span>
+              <span>Post a Job</span>
             </button>
           </div>
 
@@ -246,47 +255,53 @@ export default function ClientDashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            {projects.length === 0 ? (
+            {realJobs.length === 0 ? (
               /* Clean Empty State */
               <div className="p-12 rounded-2xl bg-surface border border-surface-border text-center space-y-4">
                 <div className="w-14 h-14 rounded-2xl bg-background border border-surface-border flex items-center justify-center mx-auto text-moss">
                   <Briefcase className="w-7 h-7" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-foreground">No projects posted yet</h3>
+                  <h3 className="text-base font-bold text-foreground">No jobs posted yet</h3>
                   <p className="text-xs text-muted max-w-sm mx-auto">
-                    Use the Post Work button on the navbar to receive proposals.
+                    Post your first job to receive proposals from freelancers. Jobs are stored on the marketplace backend.
                   </p>
                 </div>
+                <button
+                  onClick={() => router.push("/client/jobs/new")}
+                  className="py-2.5 px-5 rounded-xl bg-moss hover:bg-[#BEF264] text-background font-semibold text-xs transition shadow-md inline-flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Post Job</span>
+                </button>
               </div>
             ) : (
-              projects.map((proj) => (
+              realJobs.map((job) => (
                 <div
-                  key={proj.id}
+                  key={job.id}
                   className="p-6 rounded-2xl bg-surface border border-surface-border hover:border-moss/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
                 >
                   {/* Left Info */}
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-semibold ${
-                          proj.status === "open"
-                            ? "bg-moss/20 text-moss border border-moss/30"
-                            : "bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/30"
-                        }`}
-                      >
-                        {proj.status === "open" ? "Accepting Proposals" : "In Progress (Escrow Locked)"}
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-semibold bg-moss/20 text-moss border border-moss/30">
+                        {JOB_STATUS_LABELS[job.status]}
                       </span>
-                      <span className="text-[11px] text-muted font-mono">Posted {proj.createdAt}</span>
+                      <span className="text-[11px] text-muted font-mono">Posted {formatRelative(job.createdAt)}</span>
+                      {daysUntil(job.deadline) !== null && (
+                        <span className="text-[11px] text-muted font-mono">
+                          Due in {daysUntil(job.deadline)} days
+                        </span>
+                      )}
                     </div>
 
-                    <h3 className="text-base font-bold text-foreground">{proj.title}</h3>
-                    <p className="text-xs text-muted line-clamp-2">{proj.description}</p>
+                    <h3 className="text-base font-bold text-foreground">{job.title}</h3>
+                    <p className="text-xs text-muted line-clamp-2">{job.description}</p>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {proj.skills.map((s, idx) => (
+                      {job.skills.map((s) => (
                         <span
-                          key={idx}
+                          key={s}
                           className="px-2 py-0.5 rounded-md bg-background border border-surface-border text-[11px] font-mono text-muted"
                         >
                           {s}
@@ -299,21 +314,21 @@ export default function ClientDashboardPage() {
                   <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-4 border-t md:border-t-0 pt-4 md:pt-0 border-surface-border">
                     <div className="text-left md:text-right">
                       <div className="text-base font-extrabold text-foreground font-mono">
-                        ${proj.budgetUSD}
+                        {formatBudget(job)}
                       </div>
                       <div className="text-xs text-muted font-mono">
-                        ₹{proj.budgetINR.toLocaleString("en-IN")}
+                        Posted {formatDate(job.createdAt)}
                       </div>
                     </div>
 
                     <button
-                      onClick={() => setActiveProjectForApplicants(proj)}
+                      onClick={() => router.push(`/client/jobs/${job.id}`)}
                       className="px-4 py-2.5 rounded-xl bg-background hover:bg-moss text-foreground hover:text-background border border-surface-border hover:border-moss transition-all text-xs font-semibold flex items-center gap-2 shadow-sm"
                     >
                       <Users className="w-3.5 h-3.5 text-moss group-hover:text-background" />
                       <span>
-                        {proj.applicants.length}{" "}
-                        {proj.applicants.length === 1 ? "Applicant" : "Applicants"}
+                        {job._count?.applications ?? 0}{" "}
+                        {(job._count?.applications ?? 0) === 1 ? "Applicant" : "Applicants"}
                       </span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>

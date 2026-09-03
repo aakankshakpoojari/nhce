@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import authRoutes from './auth.routes';
 import jobRoutes from './job.routes';
+import applicationRoutes from './application.routes';
 import milestoneRoutes from './milestone.routes';
 import swapRoutes from './swap.routes';
 import withdrawalRoutes from './withdrawal.routes';
@@ -18,6 +19,7 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/jobs', jobRoutes);
+router.use('/applications', applicationRoutes);
 router.use('/milestones', milestoneRoutes);
 router.use('/swap', swapRoutes);
 router.use('/withdrawal', withdrawalRoutes);
