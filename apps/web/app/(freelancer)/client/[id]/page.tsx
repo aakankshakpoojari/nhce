@@ -55,6 +55,9 @@ export default function ClientProfilePage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full md:w-auto">
+          <button className="px-6 py-2.5 bg-background hover:bg-surface border border-surface-border rounded-xl text-foreground font-bold text-sm transition-colors text-center flex items-center justify-center gap-2">
+            Similar Clients
+          </button>
           <Link 
             href="/messages"
             className="px-6 py-2.5 bg-moss hover:bg-[#65A30D] rounded-xl text-background font-bold text-sm transition-colors text-center flex items-center justify-center gap-2"

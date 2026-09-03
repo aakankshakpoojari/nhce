@@ -174,13 +174,12 @@ export default function NetworkScene({ scroll }: NetworkSceneProps) {
 
       {/* Edges — glowing connections */}
       {lineGeometries.map((geo, i) => (
-        <line
+        <primitive
           key={`edge-${i}`}
-          ref={(el: THREE.Line) => {
+          object={new THREE.Line(geo, lineMaterial)}
+          ref={(el: any) => {
             if (el) lineRefs.current[i] = el;
           }}
-          geometry={geo}
-          material={lineMaterial}
         />
       ))}
 

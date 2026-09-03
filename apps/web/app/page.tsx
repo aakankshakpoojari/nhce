@@ -30,8 +30,48 @@ import {
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
 import MetaMaskModal from "@/components/metamask-modal";
 import AuthModal from "@/components/auth/AuthModal";
-import KineticTiltCard from "@/components/ui/KineticTiltCard";
 import { useAuth } from "@/contexts/AuthContext";
+import KineticTiltCard from "@/components/ui/KineticTiltCard";
+import LiveFeedMarquee from "@/components/ui/LiveFeedMarquee";
+import MechanicsScrollShowcase, { MechanicsStep } from "@/components/mechanics/MechanicsScrollShowcase";
+import OutroWordmark from "@/components/ui/OutroWordmark";
+import MagneticBackground from "@/components/ui/MagneticBackground";
+
+const MECHANICS_STEPS: MechanicsStep[] = [
+  {
+    id: "step-1",
+    eyebrow: "STEP 01",
+    title: "Client Locks Funds",
+    description: "The project budget is deposited into a secure, neutral digital escrow before any work begins. This ensures 100% payment guarantee for the freelancer, eliminating default risk.",
+    features: []
+  },
+  {
+    id: "step-2",
+    eyebrow: "STEP 02",
+    title: "Talent Delivers",
+    description: "The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed. Code, design, or audit deliverables are submitted on-chain or off-chain.",
+    features: []
+  },
+  {
+    id: "step-3",
+    eyebrow: "STEP 03",
+    title: "Protocol Pays Instantly",
+    description: "Upon client approval or successful dispute resolution, the smart contract automatically releases funds directly to the freelancer's wallet. Zero banking delays.",
+    features: []
+  }
+];
+
+const FadeInCard = ({ children, index, fromLeft }: { children: React.ReactNode, index: number, fromLeft: boolean }) => (
+  <motion.div
+    initial={{ opacity: 0, x: fromLeft ? -120 : 120, scale: 0.85 }}
+    whileInView={{ opacity: 1, x: 0, scale: 1 }}
+    viewport={{ once: true, amount: 0.3 }}
+    transition={{ type: "spring", stiffness: 90, damping: 12, mass: 0.9, delay: index * 0.1 }}
+    className="h-full"
+  >
+    {children}
+  </motion.div>
+);
 
 /**
  * Award-Winning Lusion.co & Active Theory Inspired Interactive Landing Page
@@ -50,6 +90,7 @@ export default function LandingPage() {
   const [authInitialRole, setAuthInitialRole] = useState<"CLIENT" | "FREELANCER">("FREELANCER");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [hasEntered, setHasEntered] = useState(false);
 
   // 1. CHARACTER MORPHING LOOP STATE:
   // Cycles E ➔ (1s) ➔ 3 ➔ (1s) ➔ $ ➔ (1s) ➔ E
@@ -69,6 +110,12 @@ export default function LandingPage() {
     return () => clearInterval(morphTimer);
   }, []);
 
+  // Set hasEntered after initial stagger finishes
+  useEffect(() => {
+    const t = setTimeout(() => setHasEntered(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   // Intro rotation effect
   useEffect(() => {
     const startTime = performance.now();
@@ -77,7 +124,7 @@ export default function LandingPage() {
     const animateIntroSpin = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const currentDeg = easeOut * 360;
       setIntroRotation(currentDeg);
@@ -142,7 +189,7 @@ export default function LandingPage() {
 
   // SCROLL-TRIGGERED KINETIC SCATTER VECTORS FOR "WE HIRE":
   // As scrollY increases (0 to 350px), characters explode/scatter outwards with staggered velocity
-  const scrollProgress = Math.min(scrollY / 320, 1);
+  const scrollProgress = Math.min(scrollY / 1100, 1);
   const isScattered = scrollProgress > 0.15;
 
   // Staggered particle scatter offsets
@@ -155,20 +202,39 @@ export default function LandingPage() {
     { x: scrollProgress * 380, y: -scrollProgress * 180, rotate: scrollProgress * 50, opacity: 1 - scrollProgress * 0.4 },   // E
   ];
 
+  const getLetterProps = (index: number) => {
+    const isEven = index % 2 === 0;
+    const initialConfig = { opacity: 0, x: isEven ? -100 : 100, y: 100, rotate: isEven ? -45 : 45, scale: 0.5 };
+    const delay = (index + 1) * 0.15;
+
+    return {
+      initial: initialConfig,
+      animate: hasEntered
+        ? {
+          x: charScatterOffsets[index].x,
+          y: charScatterOffsets[index].y,
+          rotate: charScatterOffsets[index].rotate,
+          opacity: charScatterOffsets[index].opacity,
+          scale: 1,
+        }
+        : { opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 },
+      transition: {
+        type: "spring",
+        stiffness: 90,
+        damping: 12,
+        mass: 0.9,
+        delay: hasEntered ? 0 : delay,
+      } as any
+    };
+  };
+
   const handleRoleAuth = (role: "client" | "freelancer") => {
     setAuthInitialRole(role === "client" ? "CLIENT" : "FREELANCER");
     setAuthMode("signin");
     setIsAuthModalOpen(true);
   };
 
-  // Recent Live Bounties Feed Data
-  const recentBounties = [
-    { title: "Frontend Developer Needed", amount: "$1,200", status: "Escrowed", tag: "React / Next.js", time: "2m ago" },
-    { title: "Smart Contract Audit", amount: "$3,500", status: "Settled in 2.4s", tag: "Solidity", time: "8m ago" },
-    { title: "Solana Rust Architect", amount: "$4,500", status: "Escrowed", tag: "Rust / Anchor", time: "14m ago" },
-    { title: "UI/UX Mobile Redesign", amount: "$1,850", status: "Settled in 1.9s", tag: "Figma", time: "22m ago" },
-    { title: "Zero Knowledge Circuit Dev", amount: "$6,000", status: "Escrowed", tag: "Circom / ZK", time: "35m ago" },
-  ];
+
 
   // FAQ List
   const faqList = [
@@ -196,17 +262,16 @@ export default function LandingPage() {
 
   return (
     <div
-      className={`min-h-screen bg-transparent text-foreground flex flex-col justify-between selection:bg-moss selection:text-background ${
-        isIntroSpinning ? "overflow-hidden h-screen select-none" : "overflow-x-hidden"
-      }`}
+      className={`min-h-screen bg-transparent text-foreground flex flex-col justify-between selection:bg-moss selection:text-background ${isIntroSpinning ? "overflow-hidden h-screen select-none" : "overflow-x-hidden"
+        }`}
     >
+      <MagneticBackground />
       {/* Sticky Navbar (Docked Segment Target) */}
       <header
-        className={`sticky top-0 z-40 px-6 py-4 flex items-center justify-between transition-all duration-300 ${
-          scrollY > 20
-            ? "border-b border-surface-border bg-background/90 backdrop-blur-xl shadow-2xl shadow-black/40"
-            : "border-b border-transparent bg-transparent"
-        }`}
+        className={`sticky top-0 z-40 px-6 py-4 flex items-center justify-between transition-all duration-300 ${scrollY > 20
+          ? "border-b border-surface-border bg-background/90 backdrop-blur-xl shadow-2xl shadow-black/40"
+          : "border-b border-transparent bg-transparent"
+          }`}
       >
         {/* Docked Brand Logo */}
         <Link href="/" className="flex items-center gap-3 group">
@@ -263,13 +328,16 @@ export default function LandingPage() {
         <div>
           {user ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-surface-border text-xs font-mono text-moss">
+              <Link
+                href={user.role === "CLIENT" ? "/client/profile" : "/profile"}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface hover:bg-surface-hover transition-colors border border-surface-border text-xs font-mono text-moss cursor-pointer"
+              >
                 <UserIcon className="w-3.5 h-3.5" />
                 <span>{user.name || user.email.split("@")[0]}</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-moss/10 border border-moss/20 text-moss uppercase">
                   {user.role}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={logout}
                 className="p-2 rounded-full bg-surface hover:bg-surface-hover text-muted hover:text-foreground border border-surface-border transition"
@@ -305,10 +373,10 @@ export default function LandingPage() {
 
       {/* Main Hero Section */}
       <main className="flex-1 flex flex-col items-center">
-        
+
         {/* SECTION 1: HERO & SCROLL-TRIGGERED KINETIC SCATTER ANIMATION */}
-        <section className="w-full max-w-6xl mx-auto px-6 pt-12 pb-24 flex flex-col items-center text-center relative overflow-hidden min-h-[85vh] justify-center">
-          
+        <section className="w-full px-6 pt-12 pb-24 flex flex-col items-center text-center relative overflow-hidden min-h-[100svh] justify-center">
+
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-moss/10 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
 
           {/* MASSIVE VIEWPORT-FILLING HEADLINE: "WE HIRE" / "W3 HIRE" */}
@@ -321,13 +389,7 @@ export default function LandingPage() {
             <h1 className="text-7xl sm:text-9xl md:text-[11rem] font-black tracking-tighter text-foreground flex items-center justify-center leading-none gap-3 sm:gap-6">
               {/* SEGMENT 1: W */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[0].x,
-                  y: charScatterOffsets[0].y,
-                  rotate: charScatterOffsets[0].rotate,
-                  opacity: charScatterOffsets[0].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(0)}
                 className="inline-block"
               >
                 W
@@ -335,13 +397,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 2: E ➔ 3 ➔ $ ➔ E CHARACTER MORPHING LOOP */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[1].x,
-                  y: charScatterOffsets[1].y,
-                  rotate: charScatterOffsets[1].rotate,
-                  opacity: charScatterOffsets[1].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(1)}
                 onMouseEnter={() => setIsHoveringMorphChar(true)}
                 onMouseLeave={() => setIsHoveringMorphChar(false)}
                 className="inline-block text-moss transform-style-3d cursor-pointer font-mono mx-1 filter drop-shadow-[0_0_40px_rgba(132,204,22,0.6)]"
@@ -366,13 +422,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 3: H */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[2].x,
-                  y: charScatterOffsets[2].y,
-                  rotate: charScatterOffsets[2].rotate,
-                  opacity: charScatterOffsets[2].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(2)}
                 className="inline-block"
               >
                 H
@@ -380,13 +430,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 4: I */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[3].x,
-                  y: charScatterOffsets[3].y,
-                  rotate: charScatterOffsets[3].rotate,
-                  opacity: charScatterOffsets[3].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(3)}
                 className="inline-block"
               >
                 I
@@ -394,13 +438,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 5: R */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[4].x,
-                  y: charScatterOffsets[4].y,
-                  rotate: charScatterOffsets[4].rotate,
-                  opacity: charScatterOffsets[4].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(4)}
                 className="inline-block"
               >
                 R
@@ -408,13 +446,7 @@ export default function LandingPage() {
 
               {/* SEGMENT 6: E */}
               <motion.span
-                animate={{
-                  x: charScatterOffsets[5].x,
-                  y: charScatterOffsets[5].y,
-                  rotate: charScatterOffsets[5].rotate,
-                  opacity: charScatterOffsets[5].opacity,
-                }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, mass: 0.8 }}
+                {...getLetterProps(5)}
                 className="inline-block"
               >
                 E
@@ -472,89 +504,60 @@ export default function LandingPage() {
 
         {/* SECTION 2: LIVE ACTIVITY & SOCIAL PROOF (SUPERTEAM STYLE) */}
         <section id="ticker" className="w-full max-w-6xl mx-auto px-6 py-12 border-t border-surface-border">
-          
+
           {/* Glassmorphic Counter Modules with Rolling Digits */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-            
-            <KineticTiltCard className="p-6">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Total Escrow Volume</span>
-              <div className="text-3xl font-black text-foreground tracking-tight">$2,450,800+</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>+18.4% this month</span>
-              </div>
-            </KineticTiltCard>
 
-            <KineticTiltCard className="p-6">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Active Bounties</span>
-              <div className="text-3xl font-black text-foreground tracking-tight">142 Open</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
-                <Zap className="w-3.5 h-3.5" />
-                <span>Live Marketplace</span>
-              </div>
-            </KineticTiltCard>
-
-            <KineticTiltCard className="p-6">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Contracts Settled</span>
-              <div className="text-3xl font-black text-foreground tracking-tight">1,890 Jobs</div>
-              <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
-                <span>100% Zero Default</span>
-              </div>
-            </KineticTiltCard>
-
-            <KineticTiltCard className="p-6">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Avg. Settlement</span>
-              <div className="text-3xl font-black text-[#22C55E] tracking-tight">2.4 Seconds</div>
-              <div className="text-xs text-muted font-mono flex items-center gap-1 mt-1">
-                <Globe className="w-3.5 h-3.5" />
-                <span>Instant Payout</span>
-              </div>
-            </KineticTiltCard>
-
-          </div>
-
-          {/* Recent Bounties Feed (Superteam-Style Live Data Ticker) */}
-          <div className="rounded-3xl bg-surface border border-surface-border p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-surface-border pb-4">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-moss animate-pulse" />
-                <h3 className="text-sm font-bold uppercase font-mono tracking-wider text-foreground">
-                  Live Network Feed • Recent Bounties & Escrow Claims
-                </h3>
-              </div>
-              <Link href="/bounties" className="text-xs font-mono text-moss hover:underline flex items-center gap-1">
-                <span>View All Marketplace</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentBounties.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 rounded-xl bg-background border border-surface-border hover:border-moss/50 transition-all space-y-2 group"
-                >
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs font-mono text-moss px-2 py-0.5 rounded bg-moss/10 border border-moss/20 font-semibold">
-                      {item.tag}
-                    </span>
-                    <span className="text-[10px] text-muted font-mono">{item.time}</span>
-                  </div>
-
-                  <h4 className="text-sm font-bold text-foreground group-hover:text-moss transition-colors">
-                    {item.title}
-                  </h4>
-
-                  <div className="flex justify-between items-center pt-1 text-xs border-t border-surface-border/60">
-                    <span className="font-mono text-muted">{item.status}</span>
-                    <span className="font-bold text-[#22C55E] font-mono">{item.amount}</span>
-                  </div>
+            <FadeInCard index={0} fromLeft={true}>
+              <KineticTiltCard className="p-6 h-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Total Escrow Volume</span>
+                <div className="text-3xl font-black text-foreground tracking-tight">$2,450,800+</div>
+                <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>+18.4% this month</span>
                 </div>
-              ))}
-            </div>
+              </KineticTiltCard>
+            </FadeInCard>
+
+            <FadeInCard index={1} fromLeft={false}>
+              <KineticTiltCard className="p-6 h-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Active Bounties</span>
+                <div className="text-3xl font-black text-foreground tracking-tight">142 Open</div>
+                <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Live Marketplace</span>
+                </div>
+              </KineticTiltCard>
+            </FadeInCard>
+
+            <FadeInCard index={2} fromLeft={true}>
+              <KineticTiltCard className="p-6 h-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Contracts Settled</span>
+                <div className="text-3xl font-black text-foreground tracking-tight">1,890 Jobs</div>
+                <div className="text-xs text-moss font-mono flex items-center gap-1 mt-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
+                  <span>100% Zero Default</span>
+                </div>
+              </KineticTiltCard>
+            </FadeInCard>
+
+            <FadeInCard index={3} fromLeft={false}>
+              <KineticTiltCard className="p-6 h-full">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Avg. Settlement</span>
+                <div className="text-3xl font-black text-[#22C55E] tracking-tight">2.4 Seconds</div>
+                <div className="text-xs text-muted font-mono flex items-center gap-1 mt-1">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Instant Payout</span>
+                </div>
+              </KineticTiltCard>
+            </FadeInCard>
+
           </div>
+
         </section>
+
+        {/* LiveFeedMarquee - Full Width */}
+        <LiveFeedMarquee />
 
         {/* SECTION 3: THE CORE CONFLICT (FIVERR VS W3HIRE CONTRAST MATRIX) */}
         <section id="contrast" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
@@ -571,143 +574,117 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
+
             {/* TRADITIONAL PLATFORMS (The Problem) */}
-            <KineticTiltCard className="p-8 border-2 border-red-950/40 shadow-xl" glowColor="rgba(239, 68, 68, 0.15)">
-              <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-800/40 text-red-400 flex items-center justify-center font-bold">
-                    <X className="w-5 h-5" />
+            <FadeInCard index={0} fromLeft={true}>
+              <KineticTiltCard className="p-8 border-2 border-red-950/40 shadow-xl h-full" glowColor="rgba(239, 68, 68, 0.15)">
+                <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-800/40 text-red-400 flex items-center justify-center font-bold">
+                      <X className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-extrabold text-foreground">Traditional Platforms</h3>
+                      <span className="text-xs text-muted font-mono">Fiverr, Upwork, Web2 Banks</span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-extrabold text-foreground">Traditional Platforms</h3>
-                    <span className="text-xs text-muted font-mono">Fiverr, Upwork, Web2 Banks</span>
+                </div>
+
+                <div className="space-y-4 text-sm text-muted">
+                  <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
+                    <span className="text-xs font-mono text-red-400 font-bold uppercase">5% to 10% Intermediary Fees</span>
+                    <p className="text-xs text-muted">
+                      High commissions taken directly from talent payouts and added to client invoices.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
+                    <span className="text-xs font-mono text-red-400 font-bold uppercase">3 to 5 Business Day Delays</span>
+                    <p className="text-xs text-muted">
+                      Manual bank clearances, pending holds, and foreign wire remittance wait times.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
+                    <span className="text-xs font-mono text-red-400 font-bold uppercase">Dispute & Chargeback Risks</span>
+                    <p className="text-xs text-muted">
+                      Freelancers face reversed payments, unverified clients, and arbitrary account suspensions.
+                    </p>
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-4 text-sm text-muted">
-                <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
-                  <span className="text-xs font-mono text-red-400 font-bold uppercase">5% to 10% Intermediary Fees</span>
-                  <p className="text-xs text-muted">
-                    High commissions taken directly from talent payouts and added to client invoices.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
-                  <span className="text-xs font-mono text-red-400 font-bold uppercase">3 to 5 Business Day Delays</span>
-                  <p className="text-xs text-muted">
-                    Manual bank clearances, pending holds, and foreign wire remittance wait times.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-background border border-surface-border space-y-1">
-                  <span className="text-xs font-mono text-red-400 font-bold uppercase">Dispute & Chargeback Risks</span>
-                  <p className="text-xs text-muted">
-                    Freelancers face reversed payments, unverified clients, and arbitrary account suspensions.
-                  </p>
-                </div>
-              </div>
-            </KineticTiltCard>
+              </KineticTiltCard>
+            </FadeInCard>
 
             {/* W3HIRE (The Solution) */}
-            <KineticTiltCard className="p-8 border-2 border-moss/60 shadow-2xl shadow-moss/10" glowColor="rgba(132, 204, 22, 0.3)">
-              <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-moss/10 border border-moss/30 text-moss flex items-center justify-center font-bold">
-                    <CheckCircle2 className="w-5 h-5" />
+            <FadeInCard index={1} fromLeft={false}>
+              <KineticTiltCard className="p-8 border-2 border-moss/60 shadow-2xl shadow-moss/10 h-full" glowColor="rgba(132, 204, 22, 0.3)">
+                <div className="flex items-center justify-between border-b border-surface-border pb-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-moss/10 border border-moss/30 text-moss flex items-center justify-center font-bold">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-extrabold text-foreground">W3HIRE Protocol</h3>
+                      <span className="text-xs text-moss font-mono font-bold">Trustless Smart Contracts</span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-extrabold text-foreground">W3HIRE Protocol</h3>
-                    <span className="text-xs text-moss font-mono font-bold">Trustless Smart Contracts</span>
+                  <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-moss text-background font-bold">
+                    RECOMMENDED
+                  </span>
+                </div>
+
+                <div className="space-y-4 text-sm text-muted">
+                  <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
+                    <span className="text-xs font-mono text-moss font-bold uppercase">Less than 1% Protocol Fee</span>
+                    <p className="text-xs text-muted">
+                      Direct peer-to-peer settlements. Freelancers keep 99%+ of every dollar earned.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
+                    <span className="text-xs font-mono text-moss font-bold uppercase">Instant Payout Release</span>
+                    <p className="text-xs text-muted">
+                      Smart contracts release funds straight to your wallet in seconds upon approval.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
+                    <span className="text-xs font-mono text-moss font-bold uppercase">Automated Escrow Lock</span>
+                    <p className="text-xs text-muted">
+                      Funds are deposited into neutral escrow before work starts. Zero payment default risk.
+                    </p>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-moss text-background font-bold">
-                  RECOMMENDED
-                </span>
-              </div>
-
-              <div className="space-y-4 text-sm text-muted">
-                <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
-                  <span className="text-xs font-mono text-moss font-bold uppercase">Less than 1% Protocol Fee</span>
-                  <p className="text-xs text-muted">
-                    Direct peer-to-peer settlements. Freelancers keep 99%+ of every dollar earned.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
-                  <span className="text-xs font-mono text-moss font-bold uppercase">Instant Payout Release</span>
-                  <p className="text-xs text-muted">
-                    Smart contracts release funds straight to your wallet in seconds upon approval.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-background border border-moss/30 space-y-1">
-                  <span className="text-xs font-mono text-moss font-bold uppercase">Automated Escrow Lock</span>
-                  <p className="text-xs text-muted">
-                    Funds are deposited into neutral escrow before work starts. Zero payment default risk.
-                  </p>
-                </div>
-              </div>
-            </KineticTiltCard>
+              </KineticTiltCard>
+            </FadeInCard>
 
           </div>
         </section>
+
 
         {/* SECTION 4: THE MECHANICS (3-STEP SMART CONTRACTS) */}
-        <section id="how-it-works" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
-              Simplified Smart Contracts
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-              How W3HIRE Works in 3 Steps
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            {/* STEP 1 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss font-mono text-xl font-bold flex items-center justify-center shadow-inner">
-                1
-              </div>
-              <h3 className="text-xl font-bold text-foreground">
-                Step 1: Client Locks Funds
-              </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                The project budget is deposited into a secure, neutral digital escrow before any work begins.
-              </p>
-            </KineticTiltCard>
-
-            {/* STEP 2 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss font-mono text-xl font-bold flex items-center justify-center shadow-inner">
-                2
-              </div>
-              <h3 className="text-xl font-bold text-foreground">
-                Step 2: Talent Delivers
-              </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed.
-              </p>
-            </KineticTiltCard>
-
-            {/* STEP 3 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-[#22C55E] font-mono text-xl font-bold flex items-center justify-center shadow-inner">
-                3
-              </div>
-              <h3 className="text-xl font-bold text-foreground">
-                Step 3: Protocol Pays Instantly
-              </h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Upon approval, the smart contract automatically releases funds directly to the freelancer.
-              </p>
-            </KineticTiltCard>
-
-          </div>
-        </section>
+        <MechanicsScrollShowcase
+          steps={[
+            {
+              id: "step-1",
+              eyebrow: "STEP 1",
+              title: "Client Locks Funds",
+              description: "The project budget is deposited into a secure, neutral digital escrow before any work begins. This ensures 100% payment guarantee for the freelancer, eliminating default risk.",
+            },
+            {
+              id: "step-2",
+              eyebrow: "STEP 2",
+              title: "Talent Delivers",
+              description: "The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed. Code, design, or audit deliverables are submitted on-chain or off-chain.",
+            },
+            {
+              id: "step-3",
+              eyebrow: "STEP 3",
+              title: "Protocol Pays Instantly",
+              description: "Upon client approval or successful dispute resolution, the smart contract automatically releases funds directly to the freelancer's wallet. Zero banking delays.",
+            },
+          ]}
+        />
 
         {/* SECTION 5: KEY PLATFORM FEATURES (LUSION CARD GRID) */}
         <section id="features" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
@@ -721,39 +698,45 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
+
             {/* FEATURE 1 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
-                <CreditCard className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Multi-Currency Wallets</h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Hold, swap, and withdraw in preferred currencies (USD, EUR, INR, Crypto) without hidden banking conversion spreads.
-              </p>
-            </KineticTiltCard>
+            <FadeInCard index={0} fromLeft={true}>
+              <KineticTiltCard className="p-8 space-y-4 h-full">
+                <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
+                  <CreditCard className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">Multi-Currency Wallets</h3>
+                <p className="text-xs text-muted leading-relaxed">
+                  Hold, swap, and withdraw in preferred currencies (USD, EUR, INR, Crypto) without hidden banking conversion spreads.
+                </p>
+              </KineticTiltCard>
+            </FadeInCard>
 
             {/* FEATURE 2 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Decentralized Identity (DID)</h3>
-              <p className="text-xs text-muted leading-relaxed">
-                A closed, zero-fraud ecosystem where every client and freelancer profile is cryptographically verified.
-              </p>
-            </KineticTiltCard>
+            <FadeInCard index={1} fromLeft={false}>
+              <KineticTiltCard className="p-8 space-y-4 h-full">
+                <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">Decentralized Identity (DID)</h3>
+                <p className="text-xs text-muted leading-relaxed">
+                  A closed, zero-fraud ecosystem where every client and freelancer profile is cryptographically verified.
+                </p>
+              </KineticTiltCard>
+            </FadeInCard>
 
             {/* FEATURE 3 */}
-            <KineticTiltCard className="p-8 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
-                <Globe className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Borderless Compliance</h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Built-in, automated legal checks (KYC/GDPR) to ensure global regulatory alignment across jurisdictions.
-              </p>
-            </KineticTiltCard>
+            <FadeInCard index={2} fromLeft={true}>
+              <KineticTiltCard className="p-8 space-y-4 h-full">
+                <div className="w-12 h-12 rounded-2xl bg-background border border-surface-border text-moss flex items-center justify-center">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">Borderless Compliance</h3>
+                <p className="text-xs text-muted leading-relaxed">
+                  Built-in, automated legal checks (KYC/GDPR) to ensure global regulatory alignment across jurisdictions.
+                </p>
+              </KineticTiltCard>
+            </FadeInCard>
 
           </div>
         </section>
@@ -775,6 +758,7 @@ export default function LandingPage() {
               return (
                 <div
                   key={index}
+                  onMouseEnter={() => setOpenFaq(index)}
                   className="rounded-2xl bg-surface border border-surface-border overflow-hidden transition-all shadow-md"
                 >
                   <button
@@ -836,6 +820,9 @@ export default function LandingPage() {
         </section>
 
       </main>
+
+      {/* SECTION 6: Outro Wordmark */}
+      <OutroWordmark />
 
       {/* Footer */}
       <footer className="border-t border-surface-border py-8 px-6 bg-surface/90 backdrop-blur-md">

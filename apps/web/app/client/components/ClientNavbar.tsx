@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Briefcase,
@@ -14,6 +14,7 @@ import {
   X,
   CreditCard,
   UserCheck,
+  User as UserIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -41,14 +42,31 @@ export default function ClientNavbar({
   const [showNotifications, setShowNotifications] = useState(false);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const morphSequence = ["3", "E", "$"];
+  const [morphIndex, setMorphIndex] = useState(0);
+
+  useEffect(() => {
+    const morphTimer = setInterval(() => {
+      setMorphIndex((prev) => (prev + 1) % morphSequence.length);
+    }, 1000);
+    return () => clearInterval(morphTimer);
+  }, []);
+
+  const currentMorphChar = morphSequence[morphIndex];
+
   return (
-    <header className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-6 sm:px-8">
-      <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
+    <nav className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-6 sm:px-8">
         
         {/* Left: Brand + Client Portal Identifier + Freelancer Switcher */}
         <div className="flex items-center gap-6 flex-shrink-0">
-          <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive flex items-center gap-2">
-            W3HIRE
+          <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive flex items-center group">
+            <span>W{currentMorphChar}</span>
+            <span className="flex overflow-hidden max-w-0 group-hover:max-w-[100px] transition-all duration-500 ease-in-out">
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[50ms]">H</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[100ms]">I</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[150ms]">R</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[200ms]">E</span>
+            </span>
           </Link>
 
           <Link
@@ -156,14 +174,22 @@ export default function ClientNavbar({
           </div>
 
           <div className="flex items-center gap-2 pl-2 border-l border-surface-border">
+            {/* User Profile Pill */}
+            {user && (
+              <Link href="/client/profile" className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-hover border border-surface-border text-xs font-semibold transition-colors cursor-pointer">
+                <UserIcon className="w-3.5 h-3.5 text-moss" />
+                <span className="hidden lg:inline font-mono">{user.name || user.email.split("@")[0]}</span>
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-moss/10 text-moss border border-moss/20">
+                  CLIENT
+                </span>
+              </Link>
+            )}
+
             {/* Connected Wallet Pill */}
             {user?.walletAddress ? (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surface-border text-xs font-semibold">
                 <span className="w-2 h-2 rounded-full bg-[#BEF264] shadow-[0_0_6px_rgba(190,242,100,0.8)]" />
                 <span className="font-mono">{`${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`}</span>
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-moss/10 text-moss border border-moss/20">
-                  Client
-                </span>
               </div>
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono text-amber-400">
@@ -183,8 +209,7 @@ export default function ClientNavbar({
           </div>
 
         </div>
-      </div>
-    </header>
+      </nav>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BellIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,18 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
 
+  const morphSequence = ["3", "E", "$"];
+  const [morphIndex, setMorphIndex] = useState(0);
+
+  useEffect(() => {
+    const morphTimer = setInterval(() => {
+      setMorphIndex((prev) => (prev + 1) % morphSequence.length);
+    }, 1000);
+    return () => clearInterval(morphTimer);
+  }, []);
+
+  const currentMorphChar = morphSequence[morphIndex];
+
   const navLinks = [
     { name: "Marketplace", href: "/bounties" },
     { name: "Applications", href: "/applications" },
@@ -23,7 +35,6 @@ export default function Navbar() {
     { name: "Messages", href: "/messages" },
     { name: "Community", href: "/community" },
     { name: "Wallet", href: "/wallet" },
-    { name: "Profile", href: "/profile" },
     { name: "Pro", href: "/pro", isPremium: true },
   ];
 
@@ -32,8 +43,14 @@ export default function Navbar() {
       <nav className="sticky top-0 z-50 w-full h-20 backdrop-blur-xl bg-background/70 border-b border-surface flex items-center justify-between px-6 sm:px-8">
         {/* Left: Logo */}
         <div className="flex items-center gap-6 flex-shrink-0">
-          <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive">
-            W3HIRE
+          <Link href="/" className="text-2xl font-bold tracking-tight text-foreground interactive flex items-center group">
+            <span>W{currentMorphChar}</span>
+            <span className="flex overflow-hidden max-w-0 group-hover:max-w-[100px] transition-all duration-500 ease-in-out">
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[50ms]">H</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[100ms]">I</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[150ms]">R</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-[200ms]">E</span>
+            </span>
           </Link>
 
           {/* Quick Portal Switcher */}
@@ -88,13 +105,13 @@ export default function Navbar() {
           {/* User Auth Section */}
           {user ? (
             <div className="flex items-center gap-2 pl-2 border-l border-surface-border">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surface-border text-xs font-semibold">
+              <Link href={user.role === "CLIENT" ? "/client/profile" : "/profile"} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-hover border border-surface-border text-xs font-semibold transition-colors cursor-pointer">
                 <UserIcon className="w-3.5 h-3.5 text-moss" />
                 <span className="hidden sm:inline font-mono">{user.name || user.email.split("@")[0]}</span>
                 <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-moss/10 text-moss border border-moss/20">
                   {user.role}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={logout}
                 title="Sign Out"
