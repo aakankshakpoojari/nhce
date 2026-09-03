@@ -26,6 +26,9 @@ export function getSocket(token: string): Socket {
     auth: { token },
     transports: ["websocket", "polling"],
   });
+  socket.on("connect", () => console.info("[messages] socket connected", socket?.id));
+  socket.on("connect_error", (err) => console.warn("[messages] socket connect_error:", err.message));
+  socket.on("disconnect", (reason) => console.info("[messages] socket disconnected:", reason));
   return socket;
 }
 
