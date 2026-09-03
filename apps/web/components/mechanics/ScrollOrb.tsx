@@ -40,11 +40,11 @@ function arcPath(cx: number, cy: number, r: number, fromDeg: number, toDeg: numb
 
 export default function ScrollOrb({ progress }: ScrollOrbProps) {
     // Horizontal-axis spin: full rotation(s) of the whole orb group tied directly to scroll.
-    const rotateY = useTransform(progress, [0, 1], [0, 540]);
+    const rotateY = useTransform(progress, [0, 1], [0, 1080]);
     // Vertical-axis tilt: gentle back-and-forth tied to the same scroll progress, not time.
-    const rotateX = useTransform(progress, [0, 0.5, 1], [-18, 18, -18]);
+    const rotateX = useTransform(progress, [0, 0.5, 1], [-24, 24, -24]);
     // Slow outer dial creep, subtle, so the whole instrument doesn't feel static.
-    const dialRotate = useTransform(progress, [0, 1], [0, 25]);
+    const dialRotate = useTransform(progress, [0, 1], [0, 45]);
 
     return (
         <div

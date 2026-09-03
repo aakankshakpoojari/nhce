@@ -65,7 +65,7 @@ const FadeInCard = ({ children, index, fromLeft }: { children: React.ReactNode, 
   <motion.div
     initial={{ opacity: 0, x: fromLeft ? -120 : 120, scale: 0.85 }}
     whileInView={{ opacity: 1, x: 0, scale: 1 }}
-    viewport={{ once: true, amount: 0.3 }}
+    viewport={{ once: false, amount: 0.3 }}
     transition={{ type: "spring", stiffness: 90, damping: 12, mass: 0.9, delay: index * 0.1 }}
     className="h-full"
   >
@@ -98,7 +98,6 @@ export default function LandingPage() {
   const [morphIndex, setMorphIndex] = useState(0);
   const [isHoveringMorphChar, setIsHoveringMorphChar] = useState(false);
 
-  // Intro spin state (scroll is locked until 360 spin finishes)
   const [isIntroSpinning, setIsIntroSpinning] = useState(true);
   const [introRotation, setIntroRotation] = useState(0);
 
@@ -116,15 +115,14 @@ export default function LandingPage() {
     return () => clearTimeout(t);
   }, []);
 
-  // Intro rotation effect
+  // Intro 360-degree rotation effect on initial load
   useEffect(() => {
     const startTime = performance.now();
-    const duration = 1400; // 1.4 seconds for initial spin
+    const duration = 1400; // 1.4 seconds initial spin
 
     const animateIntroSpin = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const currentDeg = easeOut * 360;
       setIntroRotation(currentDeg);
@@ -137,31 +135,15 @@ export default function LandingPage() {
     };
 
     const animId = requestAnimationFrame(animateIntroSpin);
+    return () => cancelAnimationFrame(animId);
+  }, []);
 
-    const handleWheel = (e: WheelEvent) => {
-      if (isIntroSpinning) e.preventDefault();
-    };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      if (isIntroSpinning) e.preventDefault();
-    };
 
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("touchmove", handleTouchMove);
-    };
-  }, [isIntroSpinning]);
-
-  // Handle scroll and mouse parallax
+  // Handle normal scroll and mouse parallax
   useEffect(() => {
     const handleScroll = () => {
-      if (!isIntroSpinning) {
-        setScrollY(window.scrollY);
-      }
+      setScrollY(window.scrollY);
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -171,35 +153,37 @@ export default function LandingPage() {
       setMousePos({ x, y });
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isIntroSpinning]);
+  }, []);
 
   // Active rotation angle
   const activeRotation = isIntroSpinning
     ? introRotation
-    : (introRotation + scrollY * 0.8) % 360;
+    : (introRotation + scrollY * 1.5) % 360;
 
   // Active morphing character (overridden to $ if explicitly hovered)
   const currentMorphChar = isHoveringMorphChar ? "$" : morphSequence[morphIndex];
 
-  // SCROLL-TRIGGERED KINETIC SCATTER VECTORS FOR "WE HIRE":
-  // As scrollY increases (0 to 350px), characters explode/scatter outwards with staggered velocity
-  const scrollProgress = Math.min(scrollY / 1100, 1);
-  const isScattered = scrollProgress > 0.15;
+  // Combined progress: driven entirely by scroll now.
+  const effectiveProgress = scrollY / 250;
+  
+  const baseProgress = Math.min(effectiveProgress, 1);
+  const extraProgress = Math.max(0, effectiveProgress - 1);
+  const isScattered = effectiveProgress > 0.15;
 
-  // Staggered particle scatter offsets
+  // Staggered particle scatter offsets (identical forward and reverse vectors)
   const charScatterOffsets = [
-    { x: -scrollProgress * 320, y: -scrollProgress * 120, rotate: -scrollProgress * 45, opacity: 1 - scrollProgress * 0.4 }, // W
-    { x: -scrollProgress * 220, y: -scrollProgress * 160, rotate: scrollProgress * 35, opacity: 1 - scrollProgress * 0.4 },  // E / 3 / $
-    { x: scrollProgress * 140, y: -scrollProgress * 120, rotate: -scrollProgress * 30, opacity: 1 - scrollProgress * 0.4 },  // H
-    { x: scrollProgress * 220, y: -scrollProgress * 160, rotate: scrollProgress * 40, opacity: 1 - scrollProgress * 0.4 },   // I
-    { x: scrollProgress * 300, y: -scrollProgress * 140, rotate: -scrollProgress * 35, opacity: 1 - scrollProgress * 0.4 },  // R
-    { x: scrollProgress * 380, y: -scrollProgress * 180, rotate: scrollProgress * 50, opacity: 1 - scrollProgress * 0.4 },   // E
+    { x: -baseProgress * 320 - extraProgress * 1200, y: -baseProgress * 120 - extraProgress * 600, rotate: -baseProgress * 45 - extraProgress * 180, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) }, // W
+    { x: -baseProgress * 220 - extraProgress * 800, y: -baseProgress * 160 - extraProgress * 900, rotate: baseProgress * 35 + extraProgress * 140, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },  // E / 3 / $
+    { x: baseProgress * 140 + extraProgress * 600, y: -baseProgress * 120 - extraProgress * 800, rotate: -baseProgress * 30 - extraProgress * 120, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },  // H
+    { x: baseProgress * 220 + extraProgress * 900, y: -baseProgress * 160 - extraProgress * 700, rotate: baseProgress * 40 + extraProgress * 160, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },   // I
+    { x: baseProgress * 300 + extraProgress * 1100, y: -baseProgress * 140 - extraProgress * 650, rotate: -baseProgress * 35 - extraProgress * 140, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },  // R
+    { x: baseProgress * 380 + extraProgress * 1400, y: -baseProgress * 180 - extraProgress * 850, rotate: baseProgress * 50 + extraProgress * 200, opacity: baseProgress < 1 ? Math.max(0.2, 1 - baseProgress * 0.4) : Math.max(0, 0.6 - extraProgress * 0.8) },   // E
   ];
 
   const getLetterProps = (index: number) => {
@@ -262,8 +246,7 @@ export default function LandingPage() {
 
   return (
     <div
-      className={`min-h-screen bg-transparent text-foreground flex flex-col justify-between selection:bg-moss selection:text-background ${isIntroSpinning ? "overflow-hidden h-screen select-none" : "overflow-x-hidden"
-        }`}
+      className="min-h-screen bg-transparent text-foreground flex flex-col justify-between selection:bg-moss selection:text-background overflow-clip"
     >
       <MagneticBackground />
       {/* Sticky Navbar (Docked Segment Target) */}
@@ -375,7 +358,7 @@ export default function LandingPage() {
       <main className="flex-1 flex flex-col items-center">
 
         {/* SECTION 1: HERO & SCROLL-TRIGGERED KINETIC SCATTER ANIMATION */}
-        <section className="w-full px-6 pt-12 pb-24 flex flex-col items-center text-center relative overflow-hidden min-h-[100svh] justify-center">
+        <section className="w-full px-6 py-8 flex flex-col items-center text-center relative overflow-hidden min-h-[100svh] justify-center">
 
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-moss/10 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
 
@@ -503,10 +486,10 @@ export default function LandingPage() {
         </section>
 
         {/* SECTION 2: LIVE ACTIVITY & SOCIAL PROOF (SUPERTEAM STYLE) */}
-        <section id="ticker" className="w-full max-w-6xl mx-auto px-6 py-12 border-t border-surface-border">
+        <section id="ticker" className="w-full max-w-6xl mx-auto px-6 py-6 border-t border-surface-border">
 
           {/* Glassmorphic Counter Modules with Rolling Digits */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
             <FadeInCard index={0} fromLeft={true}>
               <KineticTiltCard className="p-6 h-full">
@@ -560,8 +543,8 @@ export default function LandingPage() {
         <LiveFeedMarquee />
 
         {/* SECTION 3: THE CORE CONFLICT (FIVERR VS W3HIRE CONTRAST MATRIX) */}
-        <section id="contrast" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+        <section id="contrast" className="w-full max-w-6xl mx-auto px-6 py-8 border-t border-surface-border">
+          <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
               The Core Conflict
             </span>
@@ -687,8 +670,8 @@ export default function LandingPage() {
         />
 
         {/* SECTION 5: KEY PLATFORM FEATURES (LUSION CARD GRID) */}
-        <section id="features" className="w-full max-w-6xl mx-auto px-6 py-16 border-t border-surface-border">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+        <section id="features" className="w-full max-w-6xl mx-auto px-6 py-8 border-t border-surface-border">
+          <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
               Platform Architecture
             </span>
@@ -742,8 +725,8 @@ export default function LandingPage() {
         </section>
 
         {/* SECTION 6: INTERACTIVE FAQ SECTION (LUSION-STYLE ELASTIC EXPANDERS) */}
-        <section id="faq" className="w-full max-w-4xl mx-auto px-6 py-16 border-t border-surface-border">
-          <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
+        <section id="faq" className="w-full max-w-4xl mx-auto px-6 py-8 border-t border-surface-border">
+          <div className="text-center max-w-xl mx-auto mb-8 space-y-2">
             <span className="text-xs font-mono uppercase tracking-widest text-moss font-semibold">
               Frequently Asked Questions
             </span>
@@ -791,8 +774,8 @@ export default function LandingPage() {
         </section>
 
         {/* SECTION 7: FOOTER CTA */}
-        <section className="w-full max-w-5xl mx-auto px-6 py-20">
-          <div className="rounded-3xl bg-gradient-to-b from-surface via-surface to-background border-2 border-moss/40 p-10 sm:p-14 text-center space-y-8 shadow-2xl shadow-moss/10 relative overflow-hidden">
+        <section className="w-full max-w-5xl mx-auto px-6 py-10">
+          <div className="rounded-3xl bg-gradient-to-b from-surface via-surface to-background border-2 border-moss/40 p-8 sm:p-10 text-center space-y-6 shadow-2xl shadow-moss/10 relative overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-moss/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="max-w-2xl mx-auto space-y-4">
