@@ -39,17 +39,15 @@ export default function BrowseTalentPage() {
     <div className="min-h-screen bg-transparent text-foreground flex flex-col selection:bg-moss selection:text-background">
       
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 px-6 py-3.5 border-b border-surface-border bg-surface/95 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/client" className="flex items-center gap-2 text-xs text-muted hover:text-foreground">
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Client Dashboard</span>
-            </Link>
-          </div>
-          <span className="text-xs font-mono text-moss">BROWSE VERIFIED TALENT</span>
-        </div>
-      </header>
+      <ClientNavbar
+        creditsRemaining={3}
+        maxCredits={3}
+        isPro={false}
+        onPostProjectClick={() => {}}
+        onUpgradeProClick={() => {}}
+        notifications={[]}
+        onMarkNotificationsRead={() => {}}
+      />
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-6">
