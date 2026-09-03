@@ -52,15 +52,21 @@ export function fetchConversations(token: string): Promise<{ conversations: Conv
   return apiFetch<{ conversations: ConversationDTO[] }>("/conversations", { token });
 }
 
-/** Idempotent: a given job always resolves to the same conversation. */
+/**
+ * Open (or get) the job-scoped thread between the job's client and one freelancer.
+ * Idempotent per (job, freelancer) pair. A client must pass `freelancerId` to
+ * target an applicant (or omit it to reach the selected freelancer); a freelancer
+ * caller always resolves to their own thread and must have applied to the job.
+ */
 export function openConversation(
   token: string,
-  jobId: string
+  jobId: string,
+  freelancerId?: string
 ): Promise<{ conversation: ConversationDTO; created: boolean }> {
   return apiFetch<{ conversation: ConversationDTO; created: boolean }>("/conversations", {
     method: "POST",
     token,
-    body: JSON.stringify({ jobId }),
+    body: JSON.stringify(freelancerId ? { jobId, freelancerId } : { jobId }),
   });
 }
 
