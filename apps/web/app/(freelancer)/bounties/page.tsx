@@ -11,6 +11,7 @@ import FilterBar, { type FilterState, defaultFilters } from "@/components/filter
 export default function BountiesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [sortBy, setSortBy] = useState<"latest" | "highest_paid">("latest");
   const [isPro, setIsPro] = useState(false);
 
   const recentEarners = [
@@ -38,7 +39,7 @@ export default function BountiesPage() {
   };
 
   const filteredBounties = useMemo(() => {
-    return bounties.filter((bounty) => {
+    let result = bounties.filter((bounty) => {
       // Tags match (must have ALL selected tags)
       if (filters.tags.length > 0) {
         const hasAllTags = filters.tags.every(t => bounty.tags.includes(t));
@@ -61,7 +62,13 @@ export default function BountiesPage() {
 
       return true;
     });
-  }, [filters]);
+
+    if (sortBy === "highest_paid") {
+      result.sort((a, b) => parseBudget(b.budget) - parseBudget(a.budget));
+    }
+
+    return result;
+  }, [filters, sortBy]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -131,12 +138,32 @@ export default function BountiesPage() {
             </p>
           </div>
           
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
+            <button 
+              onClick={() => setSortBy("latest")}
+              className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all border ${
+                sortBy === "latest"
+                  ? "bg-moss text-background border-moss" 
+                  : "bg-surface border-surface-border text-foreground hover:bg-moss/10 hover:border-moss/50 hover:text-moss"
+              }`}
+            >
+              Latest
+            </button>
+            <button 
+              onClick={() => setSortBy("highest_paid")}
+              className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all border ${
+                sortBy === "highest_paid"
+                  ? "bg-moss text-background border-moss" 
+                  : "bg-surface border-surface-border text-foreground hover:bg-moss/10 hover:border-moss/50 hover:text-moss"
+              }`}
+            >
+              Highest Paid
+            </button>
             <button 
               onClick={() => setShowFilters(!showFilters)}
               className={`px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all border ${
                 showFilters || JSON.stringify(filters) !== JSON.stringify(defaultFilters)
-                  ? "bg-moss/20 border-moss/50 text-[#BEF264]" 
+                  ? "bg-moss/20 border-moss/50 text-[#556B2F]" 
                   : "bg-surface border-surface-border text-foreground hover:bg-moss/10 hover:border-moss/50 hover:text-moss"
               }`}
             >

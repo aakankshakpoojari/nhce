@@ -26,6 +26,8 @@ export default function MagneticBackground() {
     const LINE_LENGTH = 10;
     const MAGNETIC_RADIUS = 300;
 
+    let grid: { angle: number }[] = [];
+
     const resize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
@@ -33,6 +35,15 @@ export default function MagneticBackground() {
       canvas.height = height;
       cols = Math.ceil(width / SPACING);
       rows = Math.ceil(height / SPACING);
+      
+      // Initialize grid state for smooth memory
+      const newGrid = [];
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          newGrid.push({ angle: Math.PI / 4 });
+        }
+      }
+      grid = newGrid;
     };
 
     window.addEventListener("resize", resize);
@@ -44,19 +55,19 @@ export default function MagneticBackground() {
       // Clear canvas
       ctx.clearRect(0, 0, width, height);
       
-      // Determine base color based on theme (assuming dark mode uses dark bg)
-      // For simplicity, we use a semi-transparent moss green
-      ctx.strokeStyle = "rgba(132, 204, 22, 0.15)";
       ctx.lineWidth = 2;
       ctx.lineCap = "round";
 
       // Current mouse coords in px
-      // The hook normalizes mouse to -1..1, we need to convert back to px
       const mx = ((mouse.current.x + 1) / 2) * width;
       const my = ((1 - (mouse.current.y + 1) / 2)) * height;
 
       for (let i = 0; i < cols; i++) {
         for (let j = 0; j < rows; j++) {
+          const index = i * rows + j;
+          if (!grid[index]) continue;
+          const cell = grid[index];
+
           const cx = i * SPACING + SPACING / 2;
           const cy = j * SPACING + SPACING / 2;
 
@@ -64,36 +75,40 @@ export default function MagneticBackground() {
           const dy = my - cy;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          // Base angle: random noise or just pointing down-right
-          // We'll just have them point down-right by default (Math.PI / 4)
-          let angle = Math.PI / 4;
+          // Base angle: pointing down-right
+          let targetAngle = Math.PI / 4;
+          let influence = 0;
 
           if (dist < MAGNETIC_RADIUS) {
-            // Magnetic effect: angle points towards mouse
-            const targetAngle = Math.atan2(dy, dx);
-            // Influence based on distance
-            const influence = 1 - (dist / MAGNETIC_RADIUS);
-            
-            // Simple interpolation
-            // We use simple math: lerp between base angle and target angle
-            // (Note: this doesn't handle angle wrap-around perfectly but looks fine for this effect)
-            angle = angle + (targetAngle - angle) * influence;
-            
-            // Highlight color for affected lines
-            ctx.strokeStyle = `rgba(132, 204, 22, ${0.15 + influence * 0.3})`;
-          } else {
-            ctx.strokeStyle = "rgba(132, 204, 22, 0.15)";
+            // Antigravity effect: tails point AWAY from the mouse
+            targetAngle = Math.atan2(dy, dx) + Math.PI; 
+            influence = Math.pow(1 - (dist / MAGNETIC_RADIUS), 1.5);
           }
 
-          // Draw the line
+          // Calculate shortest rotation path
+          let diff = targetAngle - cell.angle;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+
+          // Smooth interpolation (spring physics)
+          const ease = influence > 0 ? 0.06 : 0.02;
+          cell.angle += diff * ease;
+
+          // Dynamic length based on antigravity force
+          const currentLength = LINE_LENGTH + (influence * 12);
+
+          // Highlight color for affected lines
+          ctx.strokeStyle = `rgba(132, 204, 22, ${0.15 + influence * 0.4})`;
+
+          // Draw the line tail
           ctx.beginPath();
           ctx.moveTo(
-            cx - Math.cos(angle) * LINE_LENGTH, 
-            cy - Math.sin(angle) * LINE_LENGTH
+            cx - Math.cos(cell.angle) * currentLength, 
+            cy - Math.sin(cell.angle) * currentLength
           );
           ctx.lineTo(
-            cx + Math.cos(angle) * LINE_LENGTH, 
-            cy + Math.sin(angle) * LINE_LENGTH
+            cx + Math.cos(cell.angle) * currentLength, 
+            cy + Math.sin(cell.angle) * currentLength
           );
           ctx.stroke();
         }
