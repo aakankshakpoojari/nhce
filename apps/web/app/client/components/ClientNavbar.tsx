@@ -84,6 +84,9 @@ export default function ClientNavbar({
           <Link href="/client/escrows" className="hover:text-moss transition">
             Escrow Vaults
           </Link>
+          <Link href="/swap" className="hover:text-moss transition">
+            Swap & Convert
+          </Link>
         </nav>
 
         {/* Right: Credits Badge, Notifications, Post Project & Wallet */}
