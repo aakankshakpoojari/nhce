@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MetaMaskModal from "@/components/metamask-modal";
-import { AlertCircle, Wallet, ArrowRight, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Wallet, ArrowRight, CheckCircle2, X } from "lucide-react";
 
 interface WalletNoticeBannerProps {
   role?: "client" | "freelancer";
   customMessage?: string;
+  /** When provided, renders a dismiss control in the top-right of the notice. */
+  onDismiss?: () => void;
 }
 
 export default function WalletNoticeBanner({
   role = "freelancer",
   customMessage,
+  onDismiss,
 }: WalletNoticeBannerProps) {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,7 +51,17 @@ export default function WalletNoticeBanner({
 
   return (
     <>
-      <div className="w-full bg-gradient-to-r from-amber-500/10 via-surface to-background border-2 border-amber-500/40 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-md shadow-xl shadow-amber-500/5 animate-in fade-in">
+      <div className="relative w-full bg-gradient-to-r from-amber-500/10 via-surface to-background border-2 border-amber-500/40 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-md shadow-xl shadow-amber-500/5 animate-in fade-in">
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Dismiss wallet reminder"
+            className="absolute top-2.5 right-2.5 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-background/60 transition"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
             <AlertCircle className="w-6 h-6 animate-pulse" />

@@ -287,7 +287,11 @@ const DIAL_ARCS = [
 
 function polarToXY(cx: number, cy: number, r: number, deg: number) {
   const rad = (deg * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  // Round to 3dp: Math.cos/sin may differ in the last ULP between the SSR
+  // (Node) and client (browser) engines, which otherwise trips React
+  // hydration on the generated SVG coordinate attributes.
+  const round = (n: number) => Math.round(n * 1000) / 1000;
+  return { x: round(cx + r * Math.cos(rad)), y: round(cy + r * Math.sin(rad)) };
 }
 
 function arcPath(cx: number, cy: number, r: number, fromDeg: number, toDeg: number) {
