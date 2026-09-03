@@ -22,7 +22,7 @@ interface AuthContextType {
   updateUserRole: (role: "CLIENT" | "FREELANCER") => void;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "") + "/api";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout();
       }
     } catch (err) {
-      console.warn("Could not fetch user profile from API, using cached state if present.", err);
+      console.warn("Could not fetch user profile from API.", err);
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, error: data.message || "Failed to log in" };
+        return { success: false, error: data.error || data.message || "Failed to log in" };
       }
 
       setToken(data.token);
@@ -102,22 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { success: true };
     } catch (err: any) {
-      // Fallback offline mock login for seamless demo experience
-      const mockUser: User = {
-        id: `usr-${Date.now()}`,
-        email,
-        name: email.split("@")[0],
-        role: "FREELANCER",
-        walletAddress: null,
-      };
-      const mockToken = "mock_jwt_token_" + Date.now();
-
-      setToken(mockToken);
-      setUser(mockUser);
-      localStorage.setItem("w3hire_auth_token", mockToken);
-      localStorage.setItem("w3hire_user", JSON.stringify(mockUser));
-
-      return { success: true };
+      console.error("Login API error:", err);
+      return { success: false, error: "Unable to connect to authentication server." };
     }
   };
 
@@ -137,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, error: data.message || "Failed to sign up" };
+        return { success: false, error: data.error || data.message || "Failed to sign up" };
       }
 
       setToken(data.token);
@@ -147,26 +133,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { success: true };
     } catch (err: any) {
-      // Fallback offline mock signup
-      const mockUser: User = {
-        id: `usr-${Date.now()}`,
-        email,
-        name: name || email.split("@")[0],
-        role: role,
-        walletAddress: null,
-      };
-      const mockToken = "mock_jwt_token_" + Date.now();
-
-      setToken(mockToken);
-      setUser(mockUser);
-      localStorage.setItem("w3hire_auth_token", mockToken);
-      localStorage.setItem("w3hire_user", JSON.stringify(mockUser));
-
-      return { success: true };
+      console.error("Signup API error:", err);
+      return { success: false, error: "Unable to connect to authentication server." };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (e) {
+        console.warn("Logout API notification failed", e);
+      }
+    }
     setUser(null);
     setToken(null);
     localStorage.removeItem("w3hire_auth_token");
