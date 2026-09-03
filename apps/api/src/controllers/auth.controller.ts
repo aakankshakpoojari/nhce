@@ -11,6 +11,27 @@ import { prisma } from '../config/db.config';
 import { env } from '../config/env.config';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 
+/**
+ * Fields safe to return to the client.
+ * NEVER includes passwordHash or siweNonce, and avoids leaking internal columns.
+ */
+function toPublicProfile(user: any) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    walletAddress: user.walletAddress,
+    bio: user.bio,
+    location: user.location,
+    rating: user.rating,
+    portfolioLinks: user.portfolioLinks,
+    jobsPostedCount: user.jobsPostedCount,
+    jobsAppliedCount: user.jobsAppliedCount,
+    createdAt: user.createdAt
+  };
+}
+
 export class AuthController {
   /**
    * POST /api/auth/signup
@@ -207,7 +228,7 @@ export class AuthController {
 
   /**
    * GET /api/auth/profile
-   * Fetch current authenticated user profile
+   * Fetch current authenticated user's public profile fields.
    */
   public async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -225,7 +246,7 @@ export class AuthController {
         return;
       }
 
-      res.json({ user });
+      res.json({ user: toPublicProfile(user) });
     } catch (error: any) {
       res.status(500).json({ error: 'Failed to fetch profile', message: error.message });
     }
@@ -333,7 +354,9 @@ export class AuthController {
 
   /**
    * PUT /api/auth/profile
-   * Update user profile details (role, name, bio, location, portfolio links)
+   * Update profile fields the user is allowed to edit: name, bio, location,
+   * walletAddress, and portfolioLinks. Role/rating/counters are never editable
+   * through this endpoint (role identity is assigned at signup).
    */
   public async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -342,20 +365,40 @@ export class AuthController {
         return;
       }
 
-      const { name, bio, location, role, portfolioLinks } = req.body;
+      const { name, bio, location, walletAddress, portfolioLinks } = req.body;
+
+      const data: any = {};
+      if (name !== undefined) {
+        const trimmed = String(name).trim();
+        data.name = trimmed || null;
+      }
+      if (bio !== undefined) {
+        const trimmed = String(bio).trim();
+        data.bio = trimmed || null;
+      }
+      if (location !== undefined) {
+        const trimmed = String(location).trim();
+        data.location = trimmed || null;
+      }
+      if (walletAddress !== undefined) {
+        const trimmed = String(walletAddress).trim();
+        if (trimmed) data.walletAddress = trimmed;
+      }
+      if (portfolioLinks !== undefined) {
+        if (Array.isArray(portfolioLinks)) {
+          data.portfolioLinks = portfolioLinks
+            .map((link: any) => String(link).trim())
+            .filter((link: string) => link.length > 0)
+            .slice(0, 50);
+        }
+      }
 
       const updatedUser = await prisma.user.update({
         where: { id: req.user.id },
-        data: {
-          ...(name && { name }),
-          ...(bio && { bio }),
-          ...(location && { location }),
-          ...(role && { role }),
-          ...(portfolioLinks && Array.isArray(portfolioLinks) && { portfolioLinks })
-        }
+        data
       });
 
-      res.json({ message: 'Profile updated successfully', user: updatedUser });
+      res.json({ message: 'Profile updated successfully', user: toPublicProfile(updatedUser) });
     } catch (error: any) {
       res.status(500).json({ error: 'Failed to update profile', message: error.message });
     }

@@ -4,12 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Plus, Loader2, AlertCircle, Users, Pencil, Send, CalendarDays, Eye, Briefcase } from "lucide-react";
+import { Plus, Loader2, AlertCircle, Users, Pencil, Send, CalendarDays, Eye, Briefcase, Trash2 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchMyJobs,
   publishJob,
+  deleteJob,
   getAuthToken,
   Job,
   JobStatus,
@@ -37,7 +38,8 @@ export default function ClientJobsPage() {
   const { user, isLoading: authLoading } = useAuth();
 
   const [publishingId, setPublishingId] = useState<string | null>(null);
-  const [publishError, setPublishError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const { data, isLoading, error, reload: load } = useApiFetch<Job[] | null>(
     async () => {
@@ -52,16 +54,32 @@ export default function ClientJobsPage() {
 
   const handlePublish = async (jobId: string) => {
     setPublishingId(jobId);
-    setPublishError(null);
+    setActionError(null);
     try {
       const token = getAuthToken();
       if (!token) return;
       await publishJob(token, jobId);
       load();
     } catch (e) {
-      setPublishError(apiErrorMessage(e));
+      setActionError(apiErrorMessage(e));
     } finally {
       setPublishingId(null);
+    }
+  };
+
+  const handleDelete = async (jobId: string) => {
+    if (!window.confirm("Delete this job? This action cannot be undone.")) return;
+    setDeletingId(jobId);
+    setActionError(null);
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      await deleteJob(token, jobId);
+      load();
+    } catch (e) {
+      setActionError(apiErrorMessage(e));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -119,8 +137,8 @@ export default function ClientJobsPage() {
         />
       ) : jobs.length > 0 ? (
         <>
-          {publishError && (
-            <div className="p-3.5 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#EF4444]">{publishError}</div>
+          {actionError && (
+            <div className="p-3.5 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#EF4444]">{actionError}</div>
           )}
           <motion.div
             className="grid grid-cols-1 gap-4"
@@ -133,6 +151,7 @@ export default function ClientJobsPage() {
               const count = job._count?.applications ?? 0;
               const isDraft = job.status === "DRAFT";
               const isEditable = job.status === "DRAFT" || job.status === "PUBLISHED";
+              const isDeletable = job.status === "DRAFT" || job.status === "PUBLISHED" || job.status === "OPEN";
               return (
                 <motion.div
                   key={job.id}
@@ -205,6 +224,17 @@ export default function ClientJobsPage() {
                           <Users className="w-3.5 h-3.5" />
                           {count} {count === 1 ? "Applicant" : "Applicants"}
                         </Link>
+                        {isDeletable && (
+                          <button
+                            onClick={() => handleDelete(job.id)}
+                            disabled={deletingId === job.id}
+                            title={count > 0 ? "Delete this job posting" : "Delete this job"}
+                            className="px-3.5 py-2 rounded-xl bg-background border border-surface-border hover:border-[#EF4444]/50 text-foreground hover:text-[#EF4444] text-xs font-semibold transition flex items-center gap-1.5 disabled:opacity-60"
+                          >
+                            {deletingId === job.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                            {deletingId === job.id ? "Deleting…" : "Delete"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

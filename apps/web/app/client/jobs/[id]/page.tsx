@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Clock,
   UserCheck,
+  Trash2,
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import {
@@ -26,6 +27,7 @@ import {
   rejectApplication,
   reviewApplication,
   publishJob,
+  deleteJob,
   getAuthToken,
   ApiError,
   Job,
@@ -118,9 +120,24 @@ export default function ClientJobDetailPage() {
     }, "publish", "Job published to the marketplace.");
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Delete this job? This action cannot be undone.")) return;
+    setActionId("delete");
+    setActionError(null);
+    setSuccessMessage(null);
+    try {
+      await deleteJob(requireToken(), id);
+      router.push("/client/jobs");
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : apiErrorMessage(err));
+      setActionId(null);
+    }
+  };
+
   const due = job ? daysUntil(job.deadline) : null;
   const isDraft = job?.status === "DRAFT";
   const isEditable = job?.status === "DRAFT" || job?.status === "PUBLISHED";
+  const isDeletable = job?.status === "DRAFT" || job?.status === "PUBLISHED" || job?.status === "OPEN";
   const selectionMade = job?.status === "FREELANCER_SELECTED";
   const selectedApp = selectionMade ? applications.find((a) => a.status === "ACCEPTED") : null;
 
@@ -234,6 +251,16 @@ export default function ClientJobDetailPage() {
             >
               {actionId === "publish" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               {actionId === "publish" ? "Publishing…" : "Publish"}
+            </button>
+          )}
+          {isDeletable && (
+            <button
+              onClick={handleDelete}
+              disabled={actionId === "delete"}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-background border border-surface-border hover:border-[#EF4444]/50 text-foreground hover:text-[#EF4444] text-xs font-semibold transition disabled:opacity-60"
+            >
+              {actionId === "delete" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              {actionId === "delete" ? "Deleting…" : "Delete"}
             </button>
           )}
         </div>

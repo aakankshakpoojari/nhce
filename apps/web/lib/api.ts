@@ -112,6 +112,23 @@ export interface ApplicationListResponse {
   applications: JobApplication[];
 }
 
+export type UserRole = "CLIENT" | "FREELANCER" | "JUROR" | "ADMIN";
+
+export interface Profile {
+  id: string;
+  email: string | null;
+  name: string | null;
+  role: UserRole;
+  walletAddress: string | null;
+  bio: string | null;
+  location: string | null;
+  rating: number;
+  portfolioLinks: string[];
+  jobsPostedCount: number;
+  jobsAppliedCount: number;
+  createdAt: string;
+}
+
 /* ------------------------------ API calls ------------------------------ */
 
 export function fetchJobs(params: Record<string, string | number | undefined> = {}): Promise<JobListResponse> {
@@ -123,8 +140,8 @@ export function fetchJobs(params: Record<string, string | number | undefined> = 
   return apiFetch<JobListResponse>(`/jobs${qs ? `?${qs}` : ""}`);
 }
 
-export function fetchJob(id: string): Promise<{ job: Job }> {
-  return apiFetch<{ job: Job }>(`/jobs/${id}`);
+export function fetchJob(id: string, token?: string | null): Promise<{ job: Job }> {
+  return apiFetch<{ job: Job }>(`/jobs/${id}`, token ? { token } : {});
 }
 
 export function fetchMyJobs(token: string): Promise<JobListResponse> {
@@ -152,6 +169,13 @@ export function updateJob(token: string, id: string, body: Record<string, unknow
     method: "PATCH",
     token,
     body: JSON.stringify(body),
+  });
+}
+
+export function deleteJob(token: string, id: string): Promise<{ message: string; id: string }> {
+  return apiFetch<{ message: string; id: string }>(`/jobs/${id}`, {
+    method: "DELETE",
+    token,
   });
 }
 
@@ -190,6 +214,23 @@ export function selectFreelancer(token: string, jobId: string, applicationId: st
     method: "POST",
     token,
     body: JSON.stringify({ applicationId }),
+  });
+}
+
+/* ------------------------------ Profile ------------------------------ */
+
+export function getProfile(token: string): Promise<{ user: Profile }> {
+  return apiFetch<{ user: Profile }>("/auth/profile", { token });
+}
+
+export function updateProfile(
+  token: string,
+  body: Partial<Pick<Profile, "name" | "bio" | "location" | "walletAddress" | "portfolioLinks">>
+): Promise<{ message: string; user: Profile }> {
+  return apiFetch<{ message: string; user: Profile }>("/auth/profile", {
+    method: "PUT",
+    token,
+    body: JSON.stringify(body),
   });
 }
 

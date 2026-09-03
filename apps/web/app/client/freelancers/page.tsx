@@ -6,7 +6,6 @@ import {
   Search,
   Filter,
   Star,
-  Award,
   ShieldCheck,
   Briefcase,
   ArrowLeft,
@@ -18,12 +17,10 @@ import ClientNavbar from "../components/ClientNavbar";
 import { freelancersList as TALENT_DIRECTORY } from "@/lib/mock-data";
 
 export default function BrowseTalentPage() {
-  const [proOnly, setProOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [minRating, setMinRating] = useState(0);
 
   const filteredTalent = TALENT_DIRECTORY.filter((t) => {
-    if (proOnly && !t.isPro) return false;
     if (minRating > 0 && t.rating < minRating) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -68,18 +65,6 @@ export default function BrowseTalentPage() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <button
-              onClick={() => setProOnly(!proOnly)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono transition border ${
-                proOnly
-                  ? "bg-moss text-background border-moss font-bold"
-                  : "bg-background text-muted border-surface-border hover:text-foreground"
-              }`}
-            >
-              <Award className="w-3.5 h-3.5" />
-              <span>PRO Verified Only</span>
-            </button>
-
             <select
               value={minRating}
               onChange={(e) => setMinRating(Number(e.target.value))}
@@ -109,11 +94,6 @@ export default function BrowseTalentPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-foreground text-base">{t.name}</span>
-                        {t.isPro && (
-                          <span className="px-2 py-0.5 rounded-full bg-moss/20 border border-moss/40 text-moss font-mono text-[10px] font-bold flex items-center gap-1">
-                            <Award className="w-3 h-3" /> PRO
-                          </span>
-                        )}
                       </div>
                       <span className="text-xs text-muted">{t.role}</span>
                     </div>

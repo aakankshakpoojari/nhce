@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { jobController } from '../controllers/job.controller';
-import { authenticateToken } from '../middlewares/auth.middleware';
+import { authenticateToken, optionalAuthenticate } from '../middlewares/auth.middleware';
 import { checkJobPostingLimit, checkJobApplicationLimit } from '../middlewares/subscriptionLimit.middleware';
 
 const router = Router();
@@ -16,12 +16,13 @@ router.get('/', (req, res) => jobController.getJobs(req, res));
 // Authenticated collections (registered before /:id)
 router.get('/my', authenticateToken, (req, res) => jobController.getMyJobs(req, res));
 
-// Job details
-router.get('/:id', (req, res) => jobController.getJobById(req, res));
+// Job details (optional auth so draft jobs stay private to their owner)
+router.get('/:id', optionalAuthenticate, (req, res) => jobController.getJobById(req, res));
 
 // Job creation & management (client only — enforced inside the controller)
 router.post('/', authenticateToken, checkJobPostingLimit, (req, res) => jobController.createJob(req, res));
 router.patch('/:id', authenticateToken, (req, res) => jobController.updateJob(req, res));
+router.delete('/:id', authenticateToken, (req, res) => jobController.deleteJob(req, res));
 router.post('/:id/publish', authenticateToken, (req, res) => jobController.publishJob(req, res));
 
 // Applications
