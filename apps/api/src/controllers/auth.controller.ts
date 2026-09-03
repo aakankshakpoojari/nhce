@@ -1,11 +1,11 @@
 /**
  * @file auth.controller.ts
- * @description Wallet-based Authentication & Profile Management Controller.
- * Handles Sign-In With Ethereum (SIWE) nonce generation, signature verification, JWT issuing, and profile management.
+ * @description Authentication & Profile Management Controller.
+ * Handles Email/Password registration, Login, JWT verification, and Profile management.
  */
 
 import { Request, Response } from 'express';
-import { generateNonce, SiweMessage } from 'siwe';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/db.config';
 import { env } from '../config/env.config';
@@ -13,58 +13,121 @@ import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 
 export class AuthController {
   /**
-   * GET /api/auth/nonce
-   * Generate cryptographic SIWE nonce for wallet signature challenge
+   * POST /api/auth/signup
+   * Register new user with email, password, name, and role
    */
-  public async getNonce(req: Request, res: Response): Promise<void> {
+  public async signup(req: Request, res: Response): Promise<void> {
     try {
-      const nonce = generateNonce();
-      res.json({ nonce });
+      const { email, password, name, role } = req.body;
+
+      if (!email || !password) {
+        res.status(400).json({ error: 'Email and password are required' });
+        return;
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Check if user already exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email: normalizedEmail }
+      });
+
+      if (existingUser) {
+        res.status(400).json({ error: 'User with this email already exists' });
+        return;
+      }
+
+      // Hash password
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(password, salt);
+
+      // Create new user
+      const userRole = role === 'CLIENT' ? 'CLIENT' : 'FREELANCER';
+      const user = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          passwordHash,
+          name: name || normalizedEmail.split('@')[0],
+          role: userRole,
+          walletAddress: null,
+          isPro: false,
+          jobsPostedCount: 0,
+          jobsAppliedCount: 0,
+          portfolioLinks: []
+        }
+      });
+
+      // Generate JWT Token
+      const tokenPayload = {
+        id: user.id,
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        isPro: user.isPro
+      };
+
+      const token = jwt.sign(tokenPayload, env.JWT_SECRET, {
+        expiresIn: '7d'
+      });
+
+      res.status(201).json({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          walletAddress: user.walletAddress,
+          bio: user.bio,
+          location: user.location,
+          rating: user.rating,
+          portfolioLinks: user.portfolioLinks,
+          isPro: user.isPro,
+          jobsPostedCount: user.jobsPostedCount,
+          jobsAppliedCount: user.jobsAppliedCount
+        }
+      });
     } catch (error: any) {
-      res.status(500).json({ error: 'Failed to generate SIWE nonce', message: error.message });
+      console.error('Signup error:', error);
+      res.status(500).json({ error: 'Registration failed', message: error.message });
     }
   }
 
   /**
-   * POST /api/auth/verify
-   * Verify SIWE message signature and issue JWT access token
+   * POST /api/auth/login
+   * Authenticate user with email and password
    */
-  public async verifySiweSignature(req: Request, res: Response): Promise<void> {
+  public async login(req: Request, res: Response): Promise<void> {
     try {
-      const { message, signature } = req.body;
+      const { email, password } = req.body;
 
-      if (!message || !signature) {
-        res.status(400).json({ error: 'Missing required parameters: message and signature' });
+      if (!email || !password) {
+        res.status(400).json({ error: 'Email and password are required' });
         return;
       }
 
-      const siweMessage = new SiweMessage(message);
-      const fields = await siweMessage.verify({ signature });
+      const normalizedEmail = email.toLowerCase().trim();
 
-      const walletAddress = fields.data.address.toLowerCase();
-
-      // Upsert User in Database by Wallet Address
-      let user = await prisma.user.findUnique({
-        where: { walletAddress }
+      const user = await prisma.user.findUnique({
+        where: { email: normalizedEmail }
       });
 
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            walletAddress,
-            role: 'FREELANCER',
-            isPro: false,
-            jobsPostedCount: 0,
-            jobsAppliedCount: 0,
-            portfolioLinks: []
-          }
-        });
+      if (!user || !user.passwordHash) {
+        res.status(401).json({ error: 'Invalid email or password' });
+        return;
+      }
+
+      const isMatch = await bcrypt.compare(password, user.passwordHash);
+      if (!isMatch) {
+        res.status(401).json({ error: 'Invalid email or password' });
+        return;
       }
 
       // Generate JWT Token
       const tokenPayload = {
         id: user.id,
-        walletAddress: user.walletAddress,
+        sub: user.id,
+        email: user.email,
         role: user.role,
         isPro: user.isPro
       };
@@ -77,9 +140,10 @@ export class AuthController {
         token,
         user: {
           id: user.id,
-          walletAddress: user.walletAddress,
-          role: user.role,
+          email: user.email,
           name: user.name,
+          role: user.role,
+          walletAddress: user.walletAddress,
           bio: user.bio,
           location: user.location,
           rating: user.rating,
@@ -90,9 +154,55 @@ export class AuthController {
         }
       });
     } catch (error: any) {
-      console.error('SIWE Verification error:', error);
-      res.status(401).json({ error: 'Authentication failed', message: error.message });
+      console.error('Login error:', error);
+      res.status(500).json({ error: 'Login failed', message: error.message });
     }
+  }
+
+  /**
+   * GET /api/auth/me
+   * Fetch authenticated user's profile from database
+   */
+  public async getMe(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id }
+      });
+
+      if (!user) {
+        res.status(404).json({ error: 'User profile not found' });
+        return;
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        walletAddress: user.walletAddress,
+        bio: user.bio,
+        location: user.location,
+        rating: user.rating,
+        portfolioLinks: user.portfolioLinks,
+        isPro: user.isPro,
+        jobsPostedCount: user.jobsPostedCount,
+        jobsAppliedCount: user.jobsAppliedCount
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to fetch profile', message: error.message });
+    }
+  }
+
+  /**
+   * POST /api/auth/logout
+   */
+  public async logout(_req: Request, res: Response): Promise<void> {
+    res.json({ message: 'Logged out successfully' });
   }
 
   /**
@@ -101,7 +211,7 @@ export class AuthController {
    */
   public async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!req.user || !req.user.id) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -127,7 +237,7 @@ export class AuthController {
    */
   public async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!req.user || !req.user.id) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }

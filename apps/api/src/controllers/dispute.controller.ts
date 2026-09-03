@@ -67,6 +67,11 @@ export class DisputeController {
         return;
       }
 
+      if (!req.user?.walletAddress) {
+        res.status(400).json({ error: 'A connected wallet is required to vote on disputes' });
+        return;
+      }
+
       const voteRecord = await disputeService.castJurorVote(id, req.user.walletAddress, choice as VoteChoice);
 
       res.json({
@@ -86,6 +91,11 @@ export class DisputeController {
     try {
       if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!req.user.walletAddress) {
+        res.status(400).json({ error: 'A connected wallet is required to claim juror rewards' });
         return;
       }
 
