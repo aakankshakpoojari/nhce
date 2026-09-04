@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -37,6 +37,31 @@ export default function ClientNavbar({
   const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const notificationRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowNotifications(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showNotifications]);
 
   const isActive = (href: string) =>
     pathname === href || (href !== "/client" && pathname.startsWith(`${href}/`));
@@ -82,7 +107,7 @@ export default function ClientNavbar({
         <ThemeToggle />
 
         {/* Notifications Dropdown */}
-        <div className="relative">
+        <div className="relative" ref={notificationRef}>
           <button
             onClick={() => {
               setShowNotifications(!showNotifications);

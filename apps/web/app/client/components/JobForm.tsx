@@ -57,11 +57,35 @@ export default function JobForm({ initialValues, submitLabel = "Create Job", isS
     }
   };
 
+  const getTomorrowString = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, "0");
+    const day = String(tomorrow.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTodayString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const validate = (): string | null => {
     if (!values.title.trim()) return "Title is required.";
     if (!values.description.trim()) return "Description is required.";
     if (!values.budget || Number(values.budget) <= 0) return "Budget must be a positive number.";
-    if (values.deadline && isNaN(new Date(values.deadline).getTime())) return "Deadline is not a valid date.";
+    if (values.deadline) {
+      if (isNaN(new Date(values.deadline).getTime())) {
+        return "Deadline is not a valid date.";
+      }
+      if (values.deadline <= getTodayString()) {
+        return "Deadline must be greater than the current date.";
+      }
+    }
     return null;
   };
 
@@ -179,11 +203,12 @@ export default function JobForm({ initialValues, submitLabel = "Create Job", isS
             <label className="block text-[11px] font-mono font-semibold uppercase text-muted mb-1.5">Deadline</label>
             <input
               type="date"
+              min={getTomorrowString()}
               value={values.deadline}
               onChange={(e) => set("deadline", e.target.value)}
               className="w-full bg-background border border-surface-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:border-moss/60 transition-colors"
             />
-            <p className="text-[11px] text-muted mt-1">Optional — when the job should be delivered by.</p>
+            <p className="text-[11px] text-muted mt-1">Optional — must be a future date when the job should be delivered by.</p>
           </div>
 
           <div className="rounded-2xl bg-background border border-surface-border p-4 text-xs text-muted space-y-2">

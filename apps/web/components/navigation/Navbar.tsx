@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BellIcon } from "@heroicons/react/24/outline";
@@ -17,6 +17,31 @@ export default function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const notificationRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowNotifications(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showNotifications]);
 
   const unauthenticatedNavLinks = [
     { name: "Home", href: "/" },
@@ -106,24 +131,22 @@ export default function Navbar() {
         <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
           <ThemeToggle />
 
-          {/* Notifications (only if logged in) */}
-          {user && (
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 text-muted hover:text-[#BEF264] transition-colors duration-300"
-              >
-                <BellIcon className="h-5 w-5" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#F59E0B] shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
-              </button>
+          {/* Notifications */}
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-muted hover:text-[#BEF264] transition-colors duration-300"
+            >
+              <BellIcon className="h-5 w-5" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#F59E0B] shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
+            </button>
 
-              <AnimatePresence>
-                {showNotifications && (
-                  <NotificationPanel onClose={() => setShowNotifications(false)} />
-                )}
-              </AnimatePresence>
-            </div>
-          )}
+            <AnimatePresence>
+              {showNotifications && (
+                <NotificationPanel onClose={() => setShowNotifications(false)} />
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* User Auth Section */}
           {user ? (

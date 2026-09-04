@@ -1,7 +1,7 @@
 "use client";
 
 import { detailedClients } from "@/lib/mock-data";
-import { StarIcon, ShieldCheckIcon, DocumentTextIcon, CurrencyDollarIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline";
+import { StarIcon, ShieldCheckIcon, DocumentTextIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -58,13 +58,6 @@ export default function ClientProfilePage() {
           <button className="px-6 py-2.5 bg-background hover:bg-surface border border-surface-border rounded-xl text-foreground font-bold text-sm transition-colors text-center flex items-center justify-center gap-2">
             Similar Clients
           </button>
-          <Link 
-            href="/messages"
-            className="px-6 py-2.5 bg-moss hover:bg-[#65A30D] rounded-xl text-background font-bold text-sm transition-colors text-center flex items-center justify-center gap-2"
-          >
-            <ChatBubbleLeftRightIcon className="w-4 h-4" />
-            Message Client
-          </Link>
         </div>
       </div>
 
