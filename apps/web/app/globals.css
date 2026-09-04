@@ -323,8 +323,38 @@ html.lenis body {
 
 .w3-marquee-row {
   will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .w3-marquee-row:hover {
   animation-play-state: paused;
+}
+
+/* LIVE FEED heading: a soft glow that sweeps letter-to-letter via staggered
+   animation-delay — pure CSS, so it never re-renders React on every frame. */
+@keyframes w3-livefeed-glow {
+  0%,
+  100% {
+    color: var(--border-surface);
+    text-shadow: none;
+  }
+  50% {
+    color: #84cc16;
+    text-shadow: 0 0 42px rgba(132, 204, 22, 0.75);
+  }
+}
+
+.w3-livefeed-letter {
+  color: var(--border-surface);
+  animation: w3-livefeed-glow 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .w3-livefeed-letter {
+    animation: none;
+  }
+  .w3-marquee-row {
+    animation: none !important;
+  }
 }

@@ -17,6 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getProfile, updateProfile, Profile, formatDate, getAuthToken, ApiError } from "@/lib/api";
+import SkillsPicker from "@/components/ui/SkillsPicker";
 
 const ROLE_LABELS: Record<string, string> = {
   CLIENT: "Client",
@@ -35,6 +36,7 @@ export default function ProfileView() {
   const [location, setLocation] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
   const [portfolioText, setPortfolioText] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -57,6 +59,7 @@ export default function ProfileView() {
         setLocation(user.location ?? "");
         setWalletAddress(user.walletAddress ?? "");
         setPortfolioText((user.portfolioLinks ?? []).join(", "));
+        setSkills(user.skills ?? []);
         setLoadError(null);
       } catch (e) {
         if (!cancelled) {
@@ -90,6 +93,7 @@ export default function ProfileView() {
         location: location.trim(),
         walletAddress: walletAddress.trim(),
         portfolioLinks,
+        ...(profile.role === "FREELANCER" ? { skills } : {}),
       });
       setProfile(user);
       setSaved(true);
@@ -279,6 +283,16 @@ export default function ProfileView() {
                 className="w-full px-4 py-3 rounded-xl bg-background border border-surface-border focus:border-moss text-sm text-foreground placeholder:text-muted/50 focus:outline-none transition resize-none"
               />
             </div>
+
+            {/* Skills (freelancers) */}
+            {profile.role === "FREELANCER" && (
+              <div className="space-y-2">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Star className="w-3.5 h-3.5 text-moss" /> Skills
+                </label>
+                <SkillsPicker label="" value={skills} onChange={setSkills} />
+              </div>
+            )}
 
             {/* Portfolio links */}
             <div className="space-y-2">

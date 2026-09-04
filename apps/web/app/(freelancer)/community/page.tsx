@@ -21,7 +21,7 @@ export default function CommunityPage() {
   };
 
   return (
-    <main className="flex-1 w-full mx-auto px-6 py-8 space-y-8">
+    <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-8 space-y-8">
       <div className="flex flex-col items-start mb-6">
         <h1 className="text-3xl font-extrabold tracking-tight text-foreground mb-2">
           Community

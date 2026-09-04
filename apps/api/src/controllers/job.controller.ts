@@ -11,6 +11,7 @@ import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { prisma } from '../config/db.config';
 import { escrowService } from '../services/web3/escrow.service';
 import { JobStatus, MilestoneStatus, ApplicationStatus } from '@prisma/client';
+import { createNotification, createNotifications } from '../services/notification.service';
 
 /** Error thrown inside controllers and translated to an HTTP response. */
 class HttpError extends Error {
@@ -27,6 +28,44 @@ const MARKETPLACE_STATUSES: JobStatus[] = [JobStatus.PUBLISHED, JobStatus.OPEN];
 const SELECTABLE_JOB_STATUSES: JobStatus[] = [JobStatus.PUBLISHED, JobStatus.OPEN];
 
 export class JobController {
+  /**
+   * Notify freelancers whose skills overlap a newly-listed job. Fire-and-forget:
+   * capped, skill-targeted (never notifies when the job lists no skills), and
+   * never blocks the request that triggered it.
+   */
+  private async notifyFreelancersOfListing(job: {
+    id: string;
+    title: string;
+    skills: string[];
+    clientId: string;
+  }): Promise<void> {
+    try {
+      if (!job.skills || job.skills.length === 0) return;
+      const freelancers = await prisma.user.findMany({
+        where: {
+          role: 'FREELANCER',
+          id: { not: job.clientId },
+          skills: { hasSome: job.skills },
+        },
+        select: { id: true },
+        take: 200,
+      });
+      if (freelancers.length === 0) return;
+      await createNotifications(
+        freelancers.map((f) => f.id),
+        () => ({
+          type: 'JOB_POSTED',
+          title: 'New job matches your skills',
+          body: job.title,
+          jobId: job.id,
+          link: `/bounties/${job.id}`,
+        })
+      );
+    } catch (err: any) {
+      console.error('[notifications] notifyFreelancersOfListing failed:', err?.message || err);
+    }
+  }
+
   /**
    * POST /api/jobs
    * Create a new job posting (client only). Saves as a draft or publishes immediately.
@@ -124,6 +163,15 @@ export class JobController {
         await prisma.user.update({
           where: { id: req.user.id },
           data: { jobsPostedCount: { increment: 1 } }
+        });
+      }
+
+      if (status === 'PUBLISHED' || status === 'OPEN') {
+        void this.notifyFreelancersOfListing({
+          id: newJob.id,
+          title: newJob.title,
+          skills: newJob.skills,
+          clientId: req.user.id,
         });
       }
 
@@ -444,6 +492,13 @@ export class JobController {
         return updated;
       });
 
+      void this.notifyFreelancersOfListing({
+        id: updatedJob.id,
+        title: updatedJob.title,
+        skills: updatedJob.skills,
+        clientId: req.user.id,
+      });
+
       res.json({ message: 'Job published successfully', job: updatedJob });
     } catch (error: any) {
       res.status(500).json({ error: 'Failed to publish job', message: error.message });
@@ -546,6 +601,15 @@ export class JobController {
           });
         }
         return created;
+      });
+
+      void createNotification({
+        userId: job.clientId,
+        type: 'APPLICATION_RECEIVED',
+        title: 'New application received',
+        body: `${application.freelancer?.name || 'A freelancer'} applied to "${job.title}"`,
+        jobId: id,
+        link: `/client/jobs/${id}`,
       });
 
       res.status(201).json({ message: 'Application submitted successfully', application });
@@ -788,6 +852,17 @@ export class JobController {
 
         return updatedJob;
       });
+
+      if (result.freelancerId) {
+        void createNotification({
+          userId: result.freelancerId,
+          type: 'APPLICATION_ACCEPTED',
+          title: 'You were selected for a job',
+          body: `The client selected you for "${result.title}"`,
+          jobId: result.id,
+          link: `/projects/${result.id}`,
+        });
+      }
 
       res.json({
         message: 'Freelancer selected successfully',

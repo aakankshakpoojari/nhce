@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ParticleDrift from "@/components/ui/particle-drift";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 import FloatingMessages from "@/components/navigation/FloatingMessages";
+import NotificationToastBridge from "@/components/notifications/NotificationToastBridge";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -51,18 +53,23 @@ export default function RootLayout({
       </head>
       <body className="bg-background text-foreground antialiased min-h-screen relative selection:bg-moss selection:text-background">
         <AuthProvider>
-          {/* Universal Persistent Canvas Layer - Visible on ALL pages */}
-          <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
-            <ParticleDrift mode="auto" />
-          </div>
+          <ToastProvider>
+            {/* Universal Persistent Canvas Layer - Visible on ALL pages */}
+            <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
+              <ParticleDrift mode="auto" />
+            </div>
 
-          {/* Dynamic App Route Pages with transparent background */}
-          <div className="relative z-10 flex flex-col min-h-screen bg-transparent">
-            {children}
-          </div>
+            {/* Dynamic App Route Pages with transparent background */}
+            <div className="relative z-10 flex flex-col min-h-screen bg-transparent">
+              {children}
+            </div>
 
-          {/* Portal-wide floating messaging widget */}
-          <FloatingMessages />
+            {/* Portal-wide floating messaging widget */}
+            <FloatingMessages />
+
+            {/* Realtime message / notification -> popup toast bridge (renders nothing itself) */}
+            <NotificationToastBridge />
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

@@ -23,6 +23,7 @@ import {
   Layers,
   HelpCircle,
   X,
+  Menu,
   CreditCard,
   Building2,
   ArrowUpRight,
@@ -30,6 +31,7 @@ import {
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
 import MetaMaskModal from "@/components/metamask-modal";
 import AuthModal from "@/components/auth/AuthModal";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import KineticTiltCard from "@/components/ui/KineticTiltCard";
 import LiveFeedMarquee from "@/components/ui/LiveFeedMarquee";
@@ -90,6 +92,7 @@ export default function LandingPage() {
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [hasEntered, setHasEntered] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // 1. CHARACTER MORPHING LOOP STATE:
   // Cycles E ➔ (1s) ➔ 3 ➔ (1s) ➔ $ ➔ (1s) ➔ E
@@ -208,6 +211,52 @@ export default function LandingPage() {
     setIsAuthModalOpen(true);
   };
 
+  // Single source for the header links, rendered in both the desktop bar and
+  // the mobile drawer. Hash links scroll within the landing page.
+  const landingNavLinks: { label: string; href: string }[] = !user
+    ? [
+        { label: "Home", href: "/" },
+        { label: "Marketplace", href: "/bounties" },
+        { label: "Mechanics", href: "#how-it-works" },
+        { label: "Why W3HIRE", href: "#contrast" },
+        { label: "Features", href: "#features" },
+        { label: "FAQ", href: "#faq" },
+      ]
+    : user.role === "CLIENT"
+    ? [
+        { label: "Home", href: "/" },
+        { label: "Post Work", href: "/client/jobs/new" },
+        { label: "My Jobs", href: "/client/jobs" },
+        { label: "My Projects", href: "/projects" },
+        { label: "Browse Talent", href: "/client/freelancers" },
+        { label: "Escrow Vaults", href: "/client/escrows" },
+        { label: "Swap", href: "/swap" },
+        { label: "Wallet", href: "/wallet" },
+      ]
+    : [
+        { label: "Home", href: "/" },
+        { label: "Marketplace", href: "/bounties" },
+        { label: "My Applications", href: "/applications" },
+        { label: "My Projects", href: "/projects" },
+        { label: "Swap", href: "/swap" },
+        { label: "Wallet", href: "/wallet" },
+      ];
+
+  const renderNavLink = (
+    link: { label: string; href: string },
+    className: string,
+    onClick?: () => void
+  ) =>
+    link.href.startsWith("#") ? (
+      <a key={link.href} href={link.href} className={className} onClick={onClick}>
+        {link.label}
+      </a>
+    ) : (
+      <Link key={link.href} href={link.href} className={className} onClick={onClick}>
+        {link.label}
+      </Link>
+    );
+
 
 
   // FAQ List
@@ -257,87 +306,19 @@ export default function LandingPage() {
           </span>
         </Link>
 
-        {/* Dynamic Navigation */}
+        {/* Dynamic Navigation (desktop) */}
         <nav className="hidden md:flex items-center gap-6 text-xs font-semibold uppercase tracking-wider text-muted">
-          {!user ? (
-            <>
-              <Link href="/" className="hover:text-moss transition-colors">
-                Home
-              </Link>
-              <Link href="/bounties" className="hover:text-moss transition-colors">
-                Marketplace
-              </Link>
-              <a href="#how-it-works" className="hover:text-moss transition-colors">
-                Mechanics
-              </a>
-              <a href="#contrast" className="hover:text-moss transition-colors">
-                Why W3HIRE
-              </a>
-              <a href="#features" className="hover:text-moss transition-colors">
-                Features
-              </a>
-              <a href="#faq" className="hover:text-moss transition-colors">
-                FAQ
-              </a>
-            </>
-          ) : user.role === "CLIENT" ? (
-            <>
-              <Link href="/" className="hover:text-moss transition-colors">
-                Home
-              </Link>
-              <Link href="/client/jobs/new" className="hover:text-moss transition-colors">
-                Post Work
-              </Link>
-              <Link href="/client/jobs" className="hover:text-moss transition-colors">
-                My Jobs
-              </Link>
-              <Link href="/projects" className="hover:text-moss transition-colors">
-                My Projects
-              </Link>
-              <Link href="/client/freelancers" className="hover:text-moss transition-colors">
-                Browse Talent
-              </Link>
-              <Link href="/client/escrows" className="hover:text-moss transition-colors">
-                Escrow Vaults
-              </Link>
-              <Link href="/swap" className="hover:text-moss transition-colors">
-                Swap
-              </Link>
-              <Link href="/wallet" className="hover:text-moss transition-colors">
-                Wallet
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link href="/" className="hover:text-moss transition-colors">
-                Home
-              </Link>
-              <Link href="/bounties" className="hover:text-moss transition-colors">
-                Marketplace
-              </Link>
-              <Link href="/applications" className="hover:text-moss transition-colors">
-                My Applications
-              </Link>
-              <Link href="/projects" className="hover:text-moss transition-colors">
-                My Projects
-              </Link>
-              <Link href="/messages" className="hover:text-moss transition-colors">
-                Messages
-              </Link>
-              <Link href="/swap" className="hover:text-moss transition-colors">
-                Swap
-              </Link>
-              <Link href="/wallet" className="hover:text-moss transition-colors">
-                Wallet
-              </Link>
-            </>
+          {landingNavLinks.map((link) =>
+            renderNavLink(link, "hover:text-moss transition-colors")
           )}
         </nav>
 
-        {/* Auth Controls */}
-        <div>
+        {/* Right cluster: theme, auth, mobile toggle */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-3">
               <Link
                 href={user.role === "CLIENT" ? "/client/profile" : "/profile"}
                 className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface hover:bg-surface-hover transition-colors border border-surface-border text-xs font-mono text-moss cursor-pointer"
@@ -357,7 +338,7 @@ export default function LandingPage() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               <button
                 onClick={() => {
                   setAuthMode("signin");
@@ -378,7 +359,90 @@ export default function LandingPage() {
               </button>
             </div>
           )}
+
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setMobileNavOpen((v) => !v)}
+            className="md:hidden p-2 rounded-xl bg-surface border border-surface-border text-foreground"
+            aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileNavOpen}
+          >
+            {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
+
+        {/* Mobile drawer */}
+        <AnimatePresence>
+          {mobileNavOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="md:hidden absolute top-full inset-x-0 mx-4 mt-2 rounded-2xl border border-surface-border bg-background/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-4 z-50"
+            >
+              <nav className="flex flex-col text-sm font-semibold uppercase tracking-wider text-muted">
+                {landingNavLinks.map((link) =>
+                  renderNavLink(
+                    link,
+                    "py-2.5 border-b border-surface-border/60 last:border-0 hover:text-moss transition-colors",
+                    () => setMobileNavOpen(false)
+                  )
+                )}
+              </nav>
+
+              <div className="mt-4 flex flex-col gap-2">
+                {user ? (
+                  <>
+                    <Link
+                      href={user.role === "CLIENT" ? "/client/profile" : "/profile"}
+                      onClick={() => setMobileNavOpen(false)}
+                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface border border-surface-border text-xs font-mono text-moss"
+                    >
+                      <UserIcon className="w-3.5 h-3.5" />
+                      <span>{user.name || user.email.split("@")[0]}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-moss/10 border border-moss/20 uppercase">
+                        {user.role}
+                      </span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setMobileNavOpen(false);
+                        logout();
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface border border-surface-border text-muted hover:text-foreground text-xs font-semibold"
+                    >
+                      <LogOut className="w-4 h-4" /> Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setMobileNavOpen(false);
+                        setAuthMode("signin");
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-warning hover:brightness-110 text-white transition shadow-md"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileNavOpen(false);
+                        setAuthMode("signup");
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-moss hover:bg-[#BEF264] text-background transition shadow-md shadow-[#84CC16]/20"
+                    >
+                      Sign Up
+                    </button>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* Main Hero Section */}

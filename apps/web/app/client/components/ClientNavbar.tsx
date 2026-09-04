@@ -7,16 +7,15 @@ import {
   Bell,
   Plus,
   X,
+  Menu,
   User as UserIcon,
   LogOut
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
+import NotificationPanel from "@/components/notifications/NotificationPanel";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-
-interface ClientNavbarProps {
-  notifications: Array<{ id: string; text: string; time: string; read: boolean; projectTitle: string }>;
-  onMarkNotificationsRead: () => void;
-}
 
 const NAV_LINKS = [
   { name: "Home", href: "/" },
@@ -30,15 +29,20 @@ const NAV_LINKS = [
   { name: "Wallet", href: "/wallet" },
 ];
 
-export default function ClientNavbar({
-  notifications,
-  onMarkNotificationsRead,
-}: ClientNavbarProps) {
+export default function ClientNavbar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const notif = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const [mobileOpen, setMobileOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the mobile drawer on navigation (render-phase reset on pathname change).
+  const [navPrevPath, setNavPrevPath] = useState(pathname);
+  if (navPrevPath !== pathname) {
+    setNavPrevPath(pathname);
+    if (mobileOpen) setMobileOpen(false);
+  }
 
   useEffect(() => {
     if (!showNotifications) return;
@@ -104,67 +108,47 @@ export default function ClientNavbar({
       </nav>
 
       {/* Right: Notifications, Post Work & Account */}
-      <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
+      <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
         <ThemeToggle />
 
-        {/* Notifications Dropdown */}
-        <div className="relative" ref={notificationRef}>
-          <button
-            onClick={() => {
-              setShowNotifications(!showNotifications);
-              if (unreadCount > 0) onMarkNotificationsRead();
-            }}
-            className="relative p-2 text-muted hover:text-moss transition-colors duration-300"
-            title="Notifications"
-          >
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#F59E0B] shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
-            )}
-          </button>
+        <button
+          onClick={() => setMobileOpen((v) => !v)}
+          className="lg:hidden p-2 rounded-xl bg-surface border border-surface-border text-foreground"
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+        >
+          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
 
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-surface border border-surface-border shadow-2xl p-4 z-50 text-foreground">
-              <div className="flex items-center justify-between border-b border-surface-border pb-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-3.5 h-3.5 text-moss" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Application Alerts</span>
-                </div>
-                <button
-                  onClick={() => setShowNotifications(false)}
-                  className="text-muted hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+        {/* Notifications */}
+        {user && (
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={() => setShowNotifications((v) => !v)}
+              className="relative p-2 text-muted hover:text-moss transition-colors duration-300"
+              aria-label="Notifications"
+            >
+              <Bell className="h-5 w-5" />
+              {notif.unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-[#F59E0B] text-[9px] font-bold text-background shadow-[0_0_8px_rgba(245,158,11,0.8)]">
+                  {notif.unreadCount > 9 ? "9+" : notif.unreadCount}
+                </span>
+              )}
+            </button>
 
-              <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="text-center py-6 text-xs text-muted">
-                    No notifications yet.
-                  </div>
-                ) : (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`p-3 rounded-xl border text-xs space-y-1 transition ${
-                        n.read
-                          ? "bg-background/50 border-surface-border/50 text-muted"
-                          : "bg-background border-moss/40 text-foreground"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-moss">{n.projectTitle}</span>
-                        <span className="text-[10px] text-muted font-mono">{n.time}</span>
-                      </div>
-                      <p className="text-[11px] text-muted">{n.text}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+            <AnimatePresence>
+              {showNotifications && (
+                <NotificationPanel
+                  notifications={notif.notifications}
+                  unreadCount={notif.unreadCount}
+                  onMarkRead={notif.markRead}
+                  onMarkAllRead={notif.markAllRead}
+                  onClose={() => setShowNotifications(false)}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 pl-2 border-l border-surface-border">
           {user && (
@@ -196,6 +180,37 @@ export default function ClientNavbar({
           </Link>
         </div>
       </div>
+
+      {/* Mobile drawer */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="lg:hidden absolute top-full inset-x-0 mx-4 mt-2 rounded-2xl border border-surface-border bg-background/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-3 z-50"
+          >
+            <nav className="flex flex-col">
+              {NAV_LINKS.map((link) => {
+                const active = isActive(link.href);
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`py-2.5 px-2 text-sm font-semibold uppercase tracking-wider border-b border-surface-border/60 last:border-0 transition-colors ${
+                      active ? "text-[#BEF264]" : "text-muted hover:text-foreground"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              })}
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
