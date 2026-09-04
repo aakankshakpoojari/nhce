@@ -15,6 +15,7 @@ import subscriptionRoutes from './subscription.routes';
 import disputeRoutes from './dispute.routes';
 import webhookRoutes from './webhook.routes';
 import conversationRoutes from './conversation.routes';
+import notificationRoutes from './notification.routes';
 import oracleRoutes from './oracle.routes';
 
 const router = Router();
@@ -30,5 +31,6 @@ router.use('/subscription', subscriptionRoutes);
 router.use('/disputes', disputeRoutes);
 router.use('/webhooks', webhookRoutes);
 router.use('/conversations', conversationRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

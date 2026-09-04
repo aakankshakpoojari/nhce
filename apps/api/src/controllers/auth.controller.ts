@@ -27,6 +27,7 @@ function toPublicProfile(user: any) {
     location: user.location,
     rating: user.rating,
     portfolioLinks: user.portfolioLinks,
+    skills: user.skills,
     jobsPostedCount: user.jobsPostedCount,
     jobsAppliedCount: user.jobsAppliedCount,
     onboardingCompleted: user.onboardingCompleted,
@@ -49,6 +50,7 @@ function toAuthUser(user: any) {
     location: user.location,
     rating: user.rating,
     portfolioLinks: user.portfolioLinks,
+    skills: user.skills,
     isPro: user.isPro,
     jobsPostedCount: user.jobsPostedCount,
     jobsAppliedCount: user.jobsAppliedCount,
@@ -77,6 +79,18 @@ function sanitizeProfileInput(body: any): Record<string, unknown> {
       .map((link: any) => String(link).trim())
       .filter((link: string) => link.length > 0)
       .slice(0, 50);
+  }
+  if (body?.skills !== undefined && Array.isArray(body.skills)) {
+    const seen = new Set<string>();
+    data.skills = body.skills
+      .map((s: any) => String(s).trim())
+      .filter((s: string) => {
+        const k = s.toLowerCase();
+        if (!s || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .slice(0, 30);
   }
   return data;
 }

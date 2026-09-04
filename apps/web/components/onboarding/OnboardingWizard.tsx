@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import SkillsPicker from "@/components/ui/SkillsPicker";
 import {
   getProfile,
   updateProfile,
@@ -29,11 +30,11 @@ import {
   ApiError,
 } from "@/lib/api";
 
-type FieldKey = "name" | "location" | "bio" | "links";
+type FieldKey = "name" | "location" | "bio" | "links" | "skills";
 
 interface FieldDef {
   key: FieldKey;
-  type: "text" | "textarea" | "links";
+  type: "text" | "textarea" | "links" | "skills";
   label: string;
   placeholder?: string;
   hint?: string;
@@ -69,6 +70,18 @@ const STEPS_BY_ROLE: Record<"FREELANCER" | "CLIENT" | "JUROR", StepDef[]> = {
           label: "Short bio",
           maxLength: 1000,
           placeholder: "Full-stack + Solidity. 5 years shipping DeFi frontends and audited contracts.",
+        },
+      ],
+    },
+    {
+      title: "What are you great at?",
+      subtitle: "Pick from the list or add your own — this is how clients find you.",
+      fields: [
+        {
+          key: "skills",
+          type: "skills",
+          label: "Your skills",
+          hint: "Tap a suggestion to add it, or type your own and press Enter",
         },
       ],
     },
@@ -151,6 +164,7 @@ interface FormState {
   location: string;
   bio: string;
   links: string[];
+  skills: string[];
 }
 
 export default function OnboardingWizard() {
@@ -167,7 +181,13 @@ export default function OnboardingWizard() {
 
   const [ready, setReady] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
-  const [form, setForm] = useState<FormState>({ name: "", location: "", bio: "", links: [""] });
+  const [form, setForm] = useState<FormState>({
+    name: "",
+    location: "",
+    bio: "",
+    links: [""],
+    skills: [],
+  });
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -205,6 +225,7 @@ export default function OnboardingWizard() {
           location: profile.location ?? "",
           bio: profile.bio ?? "",
           links: profile.portfolioLinks?.length ? [...profile.portfolioLinks] : [""],
+          skills: profile.skills ?? [],
         });
       } catch {
         setForm((f) => ({ ...f, name: f.name || user.name || "" }));
@@ -214,9 +235,14 @@ export default function OnboardingWizard() {
     })();
   }, [isLoading, user, router]);
 
-  const setField = useCallback((key: Exclude<FieldKey, "links">, value: string) => {
+  const setField = useCallback((key: "name" | "location" | "bio", value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
     setErrors((e) => ({ ...e, [key]: undefined }));
+  }, []);
+
+  const setSkills = useCallback((skills: string[]) => {
+    setForm((f) => ({ ...f, skills }));
+    setErrors((e) => ({ ...e, skills: undefined }));
   }, []);
 
   const setLink = (i: number, value: string) => {
@@ -247,6 +273,9 @@ export default function OnboardingWizard() {
         const bad = form.links.map((l) => l.trim()).filter(Boolean).find((l) => !isValidUrl(l));
         if (bad) next.links = `"${bad}" doesn't look like a valid URL.`;
       }
+      if (field.key === "skills" && form.skills.length > 30) {
+        next.skills = "Pick up to 30 skills.";
+      }
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -262,6 +291,7 @@ export default function OnboardingWizard() {
       if (field.key === "location") payload.location = form.location.trim();
       if (field.key === "bio") payload.bio = form.bio.trim();
       if (field.key === "links") payload.portfolioLinks = cleanedLinks();
+      if (field.key === "skills") payload.skills = form.skills;
     }
     if (Object.keys(payload).length > 0) {
       await updateProfile(token, payload as never);
@@ -297,6 +327,7 @@ export default function OnboardingWizard() {
         location: form.location.trim(),
         bio: form.bio.trim(),
         portfolioLinks: cleanedLinks(),
+        skills: form.skills,
       });
       await refreshUser();
       router.replace(dashboardFor(user?.role));
@@ -383,6 +414,7 @@ export default function OnboardingWizard() {
                 onLink={setLink}
                 onAddLink={addLink}
                 onRemoveLink={removeLink}
+                onSkills={setSkills}
               />
             ))}
           </div>
@@ -466,17 +498,28 @@ function FieldRenderer({
   onLink,
   onAddLink,
   onRemoveLink,
+  onSkills,
 }: {
   field: FieldDef;
   form: FormState;
   error?: string;
-  onText: (key: Exclude<FieldKey, "links">, value: string) => void;
+  onText: (key: "name" | "location" | "bio", value: string) => void;
   onLink: (i: number, value: string) => void;
   onAddLink: () => void;
   onRemoveLink: (i: number) => void;
+  onSkills: (skills: string[]) => void;
 }) {
   const inputCls =
     "w-full px-3.5 py-2.5 rounded-xl bg-background border border-surface-border text-sm text-foreground focus:outline-none focus:border-moss transition";
+
+  if (field.type === "skills") {
+    return (
+      <div>
+        <SkillsPicker label={field.label} value={form.skills} onChange={onSkills} error={error} />
+        {field.hint && !error && <p className="mt-1 text-[11px] text-muted">{field.hint}</p>}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -557,6 +600,9 @@ function ReviewStep({
     { label: "Location", value: form.location.trim() || "—" },
     { label: "Bio", value: form.bio.trim() || "—" },
   ];
+  if (role === "FREELANCER") {
+    rows.push({ label: "Skills", value: form.skills.length ? form.skills : "—" });
+  }
   if (role !== "JUROR") rows.push({ label: "Links", value: cleanedLinks.length ? cleanedLinks : "—" });
 
   return (

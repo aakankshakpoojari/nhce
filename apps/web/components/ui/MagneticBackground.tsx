@@ -55,7 +55,7 @@ export default function MagneticBackground() {
       // Clear canvas
       ctx.clearRect(0, 0, width, height);
       
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.2;
       ctx.lineCap = "round";
 
       // Current mouse coords in px
@@ -97,8 +97,16 @@ export default function MagneticBackground() {
           // Dynamic length based on antigravity force
           const currentLength = LINE_LENGTH + (influence * 12);
 
-          // Highlight color for affected lines
-          ctx.strokeStyle = `rgba(132, 204, 22, ${0.15 + influence * 0.4})`;
+          // Highlight color for affected lines — brighter idle + hotter near cursor.
+          ctx.strokeStyle = `rgba(150, 220, 40, ${0.3 + influence * 0.6})`;
+
+          // Give the lines being pushed by the cursor a soft neon bloom.
+          if (influence > 0.12) {
+            ctx.shadowColor = "rgba(170, 235, 70, 0.9)";
+            ctx.shadowBlur = 6 + influence * 10;
+          } else {
+            ctx.shadowBlur = 0;
+          }
 
           // Draw the line tail
           ctx.beginPath();
@@ -129,7 +137,7 @@ export default function MagneticBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full pointer-events-none z-0"
-      style={{ opacity: 0.6 }}
+      style={{ opacity: 0.9 }}
     />
   );
 }

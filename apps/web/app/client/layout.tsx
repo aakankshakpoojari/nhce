@@ -1,26 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import CustomCursor from "@/components/animations/CustomCursor";
 import ClientNavbar from "./components/ClientNavbar";
 import GlobalWalletBanner from "@/components/ui/GlobalWalletBanner";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-
-interface ClientNotification {
-  id: string;
-  text: string;
-  time: string;
-  read: boolean;
-  projectTitle: string;
-}
 
 export default function ClientLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [notifications, setNotifications] = useState<ClientNotification[]>([]);
-
   // Smooth mouse tracking with spring-damped inertia
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -63,10 +53,7 @@ export default function ClientLayout({
         <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-[#22C55E]/5 rounded-full blur-[120px]" />
       </motion.div>
 
-      <ClientNavbar
-        notifications={notifications}
-        onMarkNotificationsRead={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}
-      />
+      <ClientNavbar />
 
       {/* Page Content */}
       <div className="relative z-10 flex-1 flex flex-col">

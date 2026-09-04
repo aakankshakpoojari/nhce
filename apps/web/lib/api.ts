@@ -129,6 +129,7 @@ export interface Profile {
   location: string | null;
   rating: number;
   portfolioLinks: string[];
+  skills: string[];
   jobsPostedCount: number;
   jobsAppliedCount: number;
   onboardingCompleted: boolean;
@@ -287,7 +288,7 @@ export function getProfile(token: string): Promise<{ user: Profile }> {
 
 export function updateProfile(
   token: string,
-  body: Partial<Pick<Profile, "name" | "bio" | "location" | "walletAddress" | "portfolioLinks">>
+  body: Partial<Pick<Profile, "name" | "bio" | "location" | "walletAddress" | "portfolioLinks" | "skills">>
 ): Promise<{ message: string; user: Profile }> {
   return apiFetch<{ message: string; user: Profile }>("/auth/profile", {
     method: "PUT",
@@ -301,7 +302,7 @@ export function updateProfile(
 /** Persist the final onboarding payload and mark onboarding complete. */
 export function completeOnboarding(
   token: string,
-  body: Partial<Pick<Profile, "name" | "bio" | "location" | "portfolioLinks">>
+  body: Partial<Pick<Profile, "name" | "bio" | "location" | "portfolioLinks" | "skills">>
 ): Promise<{ message: string; user: Profile }> {
   return apiFetch<{ message: string; user: Profile }>("/auth/onboarding/complete", {
     method: "POST",
