@@ -27,3 +27,8 @@ out/
 # OS
 .DS_Store
 Thumbs.db
+
+# Hardhat build artifacts
+artifacts/
+cache/
+typechain-types/

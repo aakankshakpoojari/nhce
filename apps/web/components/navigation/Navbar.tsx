@@ -18,7 +18,7 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
 
-  const navLinks = [
+  const authenticatedNavLinks = [
     { name: "Marketplace", href: "/bounties" },
     { name: "Applications", href: "/applications" },
     { name: "Projects", href: "/projects" },
@@ -27,6 +27,14 @@ export default function Navbar() {
     { name: "Swap", href: "/swap" },
     { name: "Wallet", href: "/wallet" },
   ];
+
+  const unauthenticatedNavLinks = [
+    { name: "Marketplace", href: "/bounties" },
+    { name: "Community", href: "/community" },
+    { name: "Swap", href: "/swap" },
+  ];
+
+  const navLinks = user ? authenticatedNavLinks : unauthenticatedNavLinks;
 
   // A route is active when the current pathname is exactly the link href or a child of it.
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import AuthModal from "@/components/auth/AuthModal";
+import MetaMaskModal from "@/components/metamask-modal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchJob,
@@ -50,12 +51,15 @@ export default function BountyDetailPage() {
 
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [pitch, setPitch] = useState("");
-  const [requestedRate, setRequestedRate] = useState("");
-  const [deliveryDays, setDeliveryDays] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [deliveryDays, setDeliveryDays] = useState("7");
   const [submitting, setSubmitting] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const [applySuccess, setApplySuccess] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   const {
     data,
@@ -86,15 +90,10 @@ export default function BountyDetailPage() {
     if (!job) return;
     setApplyError(null);
     if (!pitch.trim()) {
-      setApplyError("Your proposal is required.");
+      setApplyError("Your proposal description is required.");
       return;
     }
-    const rate = Number(requestedRate);
     const days = Number(deliveryDays);
-    if (!rate || rate <= 0) {
-      setApplyError("Proposed amount must be a positive number.");
-      return;
-    }
     if (!days || days <= 0) {
       setApplyError("Expected delivery days must be a positive number.");
       return;
@@ -108,18 +107,37 @@ export default function BountyDetailPage() {
         setSubmitting(false);
         return;
       }
-      const res = await applyToJob(token, id, { pitch: pitch.trim(), requestedRate: rate, deliveryDays: days });
+
+      // Combine cover pitch with GitHub & Portfolio links
+      let combinedPitch = pitch.trim();
+      if (githubUrl.trim()) {
+        combinedPitch += `\n\n🐙 GitHub / PR Link: ${githubUrl.trim()}`;
+      }
+      if (portfolioUrl.trim()) {
+        combinedPitch += `\n💼 Portfolio / Top Project Link: ${portfolioUrl.trim()}`;
+      }
+
+      const activeWallet = user?.walletAddress || (typeof window !== "undefined" ? localStorage.getItem("w3hire_active_address") : null);
+
+      // Accept the client's decided budget (job.budget)
+      const res = await applyToJob(token, id, {
+        pitch: combinedPitch,
+        requestedRate: job.budget,
+        deliveryDays: days,
+        ...(activeWallet ? { walletAddress: activeWallet } : {})
+      } as any);
+
       setData((prev) => ({ job: prev?.job ?? job, myApplication: res.application }));
       setApplySuccess(true);
       setShowApplyForm(false);
       setPitch("");
-      setRequestedRate("");
-      setDeliveryDays("");
+      setGithubUrl("");
+      setPortfolioUrl("");
+      setDeliveryDays("7");
     } catch (err) {
       if (err instanceof ApiError) {
         setApplyError(err.message);
         if (err.status === 409) {
-          // Duplicate or already applied — reflect the server state.
           load();
         }
       } else {
@@ -208,6 +226,26 @@ export default function BountyDetailPage() {
       );
     }
 
+    // Freelancer: check wallet connection
+    const activeAddress = user.walletAddress || (typeof window !== "undefined" ? localStorage.getItem("w3hire_active_address") : null);
+    if (!activeAddress) {
+      return (
+        <div className="space-y-3">
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>Connect your Web3 Wallet (Phantom or MetaMask) before applying so your wallet address can be linked for milestone escrow payouts.</span>
+          </div>
+          <button
+            onClick={() => setIsWalletModalOpen(true)}
+            className="w-full px-6 py-3 bg-moss hover:bg-[#BEF264] text-background font-semibold text-sm uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+          >
+            Connect Wallet to Apply
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      );
+    }
+
     // Freelancer: already applied
     if (myApplication) {
       const ui = APP_STATUS_UI[myApplication.status];
@@ -236,47 +274,66 @@ export default function BountyDetailPage() {
 
     return (
       <form onSubmit={handleApply} className="space-y-4">
+        {/* Fixed Budget Notice */}
+        <div className="p-3 rounded-xl bg-background border border-surface-border text-xs flex justify-between items-center">
+          <span className="text-muted font-mono">Job Fixed Budget:</span>
+          <span className="font-mono font-bold text-moss">{formatBudget(job)}</span>
+        </div>
+
         <div>
           <label className="block text-[11px] font-mono font-semibold uppercase text-muted mb-1.5">
-            Proposal <span className="text-[#EF4444]">*</span>
+            Why are you a fit for this role? <span className="text-[#EF4444]">*</span>
           </label>
           <textarea
             required
             rows={4}
             value={pitch}
             onChange={(e) => setPitch(e.target.value)}
-            placeholder="Introduce yourself, outline your approach, and explain why you're the right fit…"
+            placeholder="Describe your relevant skills, approach, and why you are the ideal fit for this project…"
             className="w-full bg-background border border-surface-border rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-moss/60 transition-colors resize-none"
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[11px] font-mono font-semibold uppercase text-muted mb-1.5">
-              Proposed Amount ({job.tokenSymbol})
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={requestedRate}
-              onChange={(e) => setRequestedRate(e.target.value)}
-              placeholder="450"
-              className="w-full bg-background border border-surface-border rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-moss/60 transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-mono font-semibold uppercase text-muted mb-1.5">
-              Delivery Days
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={deliveryDays}
-              onChange={(e) => setDeliveryDays(e.target.value)}
-              placeholder="14"
-              className="w-full bg-background border border-surface-border rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-moss/60 transition-colors"
-            />
-          </div>
+
+        <div>
+          <label className="block text-[11px] font-mono font-semibold uppercase text-muted mb-1.5">
+            GitHub Profile / PR Link
+          </label>
+          <input
+            type="url"
+            value={githubUrl}
+            onChange={(e) => setGithubUrl(e.target.value)}
+            placeholder="https://github.com/your-username or PR link"
+            className="w-full bg-background border border-surface-border rounded-xl px-3.5 py-2.5 text-xs font-mono text-foreground placeholder:text-muted focus:outline-none focus:border-moss/60 transition-colors"
+          />
         </div>
+
+        <div>
+          <label className="block text-[11px] font-mono font-semibold uppercase text-muted mb-1.5">
+            Portfolio / Top Projects Link
+          </label>
+          <input
+            type="url"
+            value={portfolioUrl}
+            onChange={(e) => setPortfolioUrl(e.target.value)}
+            placeholder="https://yourportfolio.dev or project link"
+            className="w-full bg-background border border-surface-border rounded-xl px-3.5 py-2.5 text-xs font-mono text-foreground placeholder:text-muted focus:outline-none focus:border-moss/60 transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-mono font-semibold uppercase text-muted mb-1.5">
+            Expected Delivery Days
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={deliveryDays}
+            onChange={(e) => setDeliveryDays(e.target.value)}
+            placeholder="7"
+            className="w-full bg-background border border-surface-border rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-moss/60 transition-colors"
+          />
+        </div>
+
         {applyError && (
           <div className="p-3 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#EF4444]">{applyError}</div>
         )}
@@ -316,6 +373,36 @@ export default function BountyDetailPage() {
           Back to Marketplace
         </Link>
       </div>
+
+      {/* Escrow Funded & Work Started Banner */}
+      {(job.status === "IN_PROGRESS" || job.escrowAddress) && (
+        <div className="p-6 rounded-2xl bg-moss/10 border border-moss/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-moss text-background flex items-center justify-center shrink-0 font-bold text-xl">
+              🔒
+            </div>
+            <div>
+              <div className="text-base font-extrabold text-foreground flex items-center gap-2">
+                Work Started & Money Locked in Escrow!
+              </div>
+              <p className="text-xs text-muted mt-0.5">
+                The client has funded the project budget into the Smart Contract Escrow Vault on Sepolia Devnet. Complete the milestone deliverables to receive your payout.
+              </p>
+            </div>
+          </div>
+
+          {job.escrowAddress && (
+            <a
+              href={`https://sepolia.etherscan.io/address/${job.escrowAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 rounded-xl bg-background border border-moss/40 hover:border-moss text-moss text-xs font-mono font-semibold transition shrink-0"
+            >
+              Vault: {job.escrowAddress.slice(0, 6)}...{job.escrowAddress.slice(-4)} ↗
+            </a>
+          )}
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-surface border border-surface-border rounded-2xl p-8">
@@ -409,6 +496,16 @@ export default function BountyDetailPage() {
         initialMode="signin"
         initialRole="FREELANCER"
         onSuccess={() => {
+          resyncApplication();
+        }}
+      />
+
+      <MetaMaskModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        role="freelancer"
+        onSuccess={(account) => {
+          setIsWalletModalOpen(false);
           resyncApplication();
         }}
       />

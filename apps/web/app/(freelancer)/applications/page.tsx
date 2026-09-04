@@ -84,7 +84,10 @@ export default function ApplicationsPage() {
               key={app.id}
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } } }}
             >
-              <div className="bg-surface border border-surface-border hover:border-moss/50 rounded-2xl p-6 transition-colors">
+              <div
+                onClick={() => router.push(`/bounties/${app.jobId}`)}
+                className="bg-surface border border-surface-border hover:border-moss/50 rounded-2xl p-6 transition-all cursor-pointer group hover:shadow-lg"
+              >
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   {/* Left: Job info + proposal */}
                   <div className="flex-1 min-w-0 space-y-3">
@@ -98,13 +101,12 @@ export default function ApplicationsPage() {
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => router.push(`/bounties/${app.jobId}`)}
-                      className="block text-base font-bold text-foreground hover:text-moss transition-colors text-left group flex items-center gap-1.5"
-                    >
-                      {app.job?.title || "Job"}
-                      <ArrowRight className="w-4 h-4 text-muted group-hover:text-moss opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-bold text-foreground group-hover:text-moss transition-colors">
+                        {app.job?.title || "Job Application"}
+                      </h2>
+                      <ArrowRight className="w-4 h-4 text-muted group-hover:text-moss group-hover:translate-x-1 transition-all" />
+                    </div>
 
                     <p className="text-xs text-muted line-clamp-3 max-w-2xl">{app.pitch}</p>
 
@@ -120,14 +122,19 @@ export default function ApplicationsPage() {
                     </div>
                   </div>
 
-                  {/* Right: Job budget */}
+                  {/* Right: Job budget & Open action */}
                   {app.job && (
-                    <div className="text-left md:text-right shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-surface-border">
-                      <div className="text-xs font-mono text-muted uppercase">Job Budget</div>
-                      <div className="text-lg font-extrabold font-mono text-foreground">{formatBudget(app.job)}</div>
-                      <div className="text-[11px] text-muted font-mono mt-0.5">
-                        {app.job.client?.name || "Client"} · {app.job._count?.applications ?? 0} applicants
+                    <div className="text-left md:text-right shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-surface-border flex flex-col justify-between items-start md:items-end gap-3">
+                      <div>
+                        <div className="text-xs font-mono text-muted uppercase">Job Budget</div>
+                        <div className="text-lg font-extrabold font-mono text-foreground">{formatBudget(app.job)}</div>
+                        <div className="text-[11px] text-muted font-mono mt-0.5">
+                          {app.job.client?.name || "Client"} · {app.job._count?.applications ?? 0} applicants
+                        </div>
                       </div>
+                      <span className="px-3.5 py-1.5 rounded-xl bg-moss/10 group-hover:bg-moss group-hover:text-background text-moss font-semibold text-xs transition-colors flex items-center gap-1">
+                        Open Job <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
                     </div>
                   )}
                 </div>

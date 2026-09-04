@@ -24,6 +24,7 @@ const NAV_LINKS = [
   { name: "My Jobs", href: "/client/jobs" },
   { name: "Browse Talent", href: "/client/freelancers" },
   { name: "Escrow Vaults", href: "/client/escrows" },
+  { name: "Wallet", href: "/wallet" },
 ];
 
 export default function ClientNavbar({

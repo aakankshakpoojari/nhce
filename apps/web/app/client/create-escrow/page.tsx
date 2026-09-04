@@ -1,29 +1,96 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, DollarSign } from "lucide-react";
 
-const USD_TO_INR_RATE = 83.25;
+import { ethers } from "ethers";
+import contractsConfig from "../../../config/contracts.json";
 
-export default function CreateEscrowPage() {
+function CreateEscrowForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [freelancerAddress, setFreelancerAddress] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
-  const [amountUSD, setAmountUSD] = useState(1000);
+  const [amountETH, setAmountETH] = useState("0.01");
   const [milestoneDesc, setMilestoneDesc] = useState("");
   const [isDeploying, setIsDeploying] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const amountINR = Math.round(amountUSD * USD_TO_INR_RATE);
+  useEffect(() => {
+    const title = searchParams.get("title");
+    const address = searchParams.get("freelancerAddress");
+    const amount = searchParams.get("amountETH");
+    if (title) setProjectTitle(title);
+    if (address) setFreelancerAddress(address);
+    if (amount) setAmountETH(amount);
+  }, [searchParams]);
 
-  const handleDeployEscrow = (e: React.FormEvent) => {
+  const handleDeployEscrow = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsDeploying(true);
-    setTimeout(() => {
+    setErrorMessage(null);
+    setTxHash(null);
+
+    try {
+      const win = typeof window !== "undefined" ? (window as any) : {};
+      const ethProvider = win.phantom?.ethereum || win.ethereum;
+      if (!ethProvider) {
+        throw new Error("No Web3 wallet detected. Install Phantom or MetaMask extension.");
+      }
+
+      const provider = new ethers.BrowserProvider(ethProvider);
+      const signer = await provider.getSigner();
+
+      // Ensure target address is valid
+      if (!ethers.isAddress(freelancerAddress)) {
+        throw new Error("Invalid freelancer EVM wallet address.");
+      }
+
+      const factoryAddress = contractsConfig.contracts.JobEscrowFactory.address;
+      const factoryAbi = contractsConfig.contracts.JobEscrowFactory.abi;
+
+      const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, signer);
+
+      const rawJobId = searchParams.get("jobId");
+      const jobId = rawJobId ? ethers.id(rawJobId) : ethers.id(`job_${Date.now()}_${Math.floor(Math.random() * 1000)}`);
+      const ethValue = ethers.parseEther(amountETH || "0.01");
+
+      // Broadcast transaction to Sepolia smart contract
+      const tx = await factoryContract.createEscrow(jobId, freelancerAddress, ethers.ZeroAddress, { value: ethValue });
+      setTxHash(tx.hash);
+
+      await tx.wait();
+
+      // Retrieve deployed vault address
+      let deployedVaultAddr = "";
+      try {
+        deployedVaultAddr = await factoryContract.getEscrowByJobId(jobId);
+      } catch (e) {
+        console.warn("[escrow] Could not query escrow address by ID:", e);
+      }
+
+      // Sync backend database to update Job status to IN_PROGRESS and save escrowAddress
+      const token = typeof window !== "undefined" ? localStorage.getItem("w3hire_auth_token") : null;
+      if (token && rawJobId && deployedVaultAddr) {
+        try {
+          const { fundJobEscrow } = await import("@/lib/api");
+          await fundJobEscrow(token, rawJobId, deployedVaultAddr, freelancerAddress);
+        } catch (apiErr) {
+          console.warn("[escrow] Backend sync error:", apiErr);
+        }
+      }
+
       setIsDeploying(false);
       router.push("/client/escrows");
-    }, 1500);
+    } catch (err: any) {
+      console.error("[escrow] deployment error:", err);
+      setErrorMessage(err?.reason || err?.message || "Escrow vault creation failed.");
+      setIsDeploying(false);
+    }
   };
 
   return (
@@ -69,27 +136,28 @@ export default function CreateEscrowPage() {
               />
             </div>
 
-            {/* Dual Currency Amount */}
+            {/* Sepolia ETH Lock Amount */}
             <div className="p-4 rounded-2xl bg-background border border-surface-border space-y-3">
-              <span className="text-xs font-semibold text-foreground block">Escrow Amount (Dual Currency)</span>
+              <span className="text-xs font-semibold text-foreground block">Escrow Funding Amount (Sepolia Devnet)</span>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-[11px] text-muted font-mono">Amount (USD)</span>
+                  <span className="text-[11px] text-muted font-mono">Amount (ETH)</span>
                   <input
-                    type="number"
-                    min={50}
-                    value={amountUSD}
-                    onChange={(e) => setAmountUSD(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-surface border border-surface-border text-sm font-mono font-bold text-foreground"
+                    type="text"
+                    required
+                    value={amountETH}
+                    onChange={(e) => setAmountETH(e.target.value)}
+                    placeholder="0.01"
+                    className="w-full px-3 py-2 rounded-xl bg-surface border border-surface-border text-sm font-mono font-bold text-moss focus:outline-none"
                   />
                 </div>
                 <div>
-                  <span className="text-[11px] text-muted font-mono">Equivalent (INR)</span>
+                  <span className="text-[11px] text-muted font-mono">Target Chain</span>
                   <input
                     type="text"
                     readOnly
-                    value={`₹${amountINR.toLocaleString("en-IN")}`}
-                    className="w-full px-3 py-2 rounded-xl bg-surface border border-surface-border text-sm font-mono font-bold text-[#22C55E]"
+                    value="EVM Sepolia Devnet"
+                    className="w-full px-3 py-2 rounded-xl bg-surface border border-surface-border text-xs font-mono font-bold text-muted"
                   />
                 </div>
               </div>
@@ -106,6 +174,26 @@ export default function CreateEscrowPage() {
                 className="w-full px-4 py-3 rounded-xl bg-background border border-surface-border focus:border-moss text-xs text-foreground focus:outline-none resize-none"
               />
             </div>
+
+            {errorMessage && (
+              <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/40 text-xs text-red-300">
+                ⚠️ {errorMessage}
+              </div>
+            )}
+
+            {txHash && (
+              <div className="p-3 rounded-xl bg-moss/10 border border-moss/30 text-xs text-moss flex flex-col gap-1">
+                <span>🚀 Transaction Broadcasted!</span>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-mono"
+                >
+                  View on Sepolia Etherscan ↗
+                </a>
+              </div>
+            )}
 
             <button
               type="submit"
@@ -125,5 +213,13 @@ export default function CreateEscrowPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CreateEscrowPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted">Loading Escrow Form...</div>}>
+      <CreateEscrowForm />
+    </Suspense>
   );
 }

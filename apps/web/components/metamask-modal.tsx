@@ -26,8 +26,22 @@ export default function MetaMaskModal({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [hasExtension, setHasExtension] = useState<boolean>(false);
 
+  const getEthereumProvider = () => {
+    if (typeof window === "undefined") return undefined;
+    const win = window as any;
+    if (win.phantom?.ethereum) return win.phantom.ethereum;
+    if (Array.isArray(win.ethereum?.providers)) {
+      const phantom = win.ethereum.providers.find((p: any) => p.isPhantom);
+      if (phantom) return phantom;
+      const metamask = win.ethereum.providers.find((p: any) => p.isMetaMask);
+      if (metamask) return metamask;
+      return win.ethereum.providers[0];
+    }
+    return win.ethereum;
+  };
+
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).ethereum) {
+    if (getEthereumProvider()) {
       setHasExtension(true);
     }
   }, []);
@@ -46,12 +60,12 @@ export default function MetaMaskModal({
   const targetRoute = role === "client" ? "/client" : "/bounties";
 
   const handleConnectWallet = async () => {
-    const eth = typeof window !== "undefined" ? (window as any).ethereum : undefined;
+    const eth = getEthereumProvider();
 
     // No injected wallet — never fabricate an address; tell the user to install one.
     if (!eth) {
       setErrorMessage(
-        "No Web3 wallet detected. Install the MetaMask extension (or enable your browser's built-in wallet) and try again."
+        "No Web3 wallet detected. Install Phantom or MetaMask extension and try again."
       );
       setStep("no_wallet");
       return;
@@ -67,6 +81,33 @@ export default function MetaMaskModal({
         setErrorMessage("No account was shared. Unlock your wallet and select an account to continue.");
         setStep("error");
         return;
+      }
+
+      // Auto-switch to Sepolia Testnet (0xaa36a7 = 11155111)
+      try {
+        await eth.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0xaa36a7" }],
+        });
+      } catch (switchErr: any) {
+        if (switchErr?.code === 4902) {
+          try {
+            await eth.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: "0xaa36a7",
+                  chainName: "Ethereum Sepolia Testnet",
+                  nativeCurrency: { name: "Sepolia ETH", symbol: "ETH", decimals: 18 },
+                  rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
+                  blockExplorerUrls: ["https://sepolia.etherscan.io"],
+                },
+              ],
+            });
+          } catch (addErr) {
+            console.warn("[wallet] Failed to add Sepolia network:", addErr);
+          }
+        }
       }
 
       const normalizedAddress = userAddress.toLowerCase();
@@ -171,7 +212,7 @@ export default function MetaMaskModal({
           <p className="text-xs text-muted mt-1 max-w-xs">
             {step === "role_conflict"
               ? "Each wallet ID can only be registered as either a Client or a Freelancer."
-              : "Connect your MetaMask wallet to authenticate your account."}
+              : "Connect your Phantom or MetaMask wallet to authenticate your account."}
           </p>
         </div>
 
