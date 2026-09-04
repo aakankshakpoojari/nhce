@@ -70,9 +70,19 @@ export class JobController {
         : [];
 
       const deadlineDate = deadline ? new Date(deadline) : null;
-      if (deadline && isNaN(deadlineDate!.getTime())) {
-        res.status(400).json({ error: 'deadline must be a valid date' });
-        return;
+      if (deadline) {
+        if (isNaN(deadlineDate!.getTime())) {
+          res.status(400).json({ error: 'deadline must be a valid date' });
+          return;
+        }
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const checkDate = new Date(deadlineDate!);
+        checkDate.setHours(0, 0, 0, 0);
+        if (checkDate.getTime() <= todayStart.getTime()) {
+          res.status(400).json({ error: 'deadline must be greater than the current date' });
+          return;
+        }
       }
 
       // Create Job and (optionally) Milestones in Prisma
@@ -312,6 +322,14 @@ export class JobController {
           const deadlineDate = new Date(deadline);
           if (isNaN(deadlineDate.getTime())) {
             res.status(400).json({ error: 'deadline must be a valid date' });
+            return;
+          }
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const checkDate = new Date(deadlineDate);
+          checkDate.setHours(0, 0, 0, 0);
+          if (checkDate.getTime() <= todayStart.getTime()) {
+            res.status(400).json({ error: 'deadline must be greater than the current date' });
             return;
           }
           data.deadline = deadlineDate;
