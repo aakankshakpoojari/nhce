@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ParticleDrift from "@/components/ui/particle-drift";
 import { AuthProvider } from "@/contexts/AuthContext";
-import FloatingMessageButton from "@/components/navigation/FloatingMessageButton";
+import FloatingMessages from "@/components/navigation/FloatingMessages";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -61,8 +61,8 @@ export default function RootLayout({
             {children}
           </div>
 
-          {/* Floating Message Quick Access Button */}
-          <FloatingMessageButton />
+          {/* Portal-wide floating messaging widget */}
+          <FloatingMessages />
         </AuthProvider>
       </body>
     </html>
