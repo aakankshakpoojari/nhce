@@ -58,7 +58,23 @@ export default function ClientEscrowsPage() {
         }
       }
 
-      setEscrows(combined);
+      // Filter out stale dummy entries (e.g. amountUSD === 0 && !amountEth)
+      const validEscrows = combined.filter((e) => {
+        if (!e.projectTitle) return false;
+        if (!e.amountEth && e.amountUSD === 0) return false;
+        return true;
+      });
+
+      // Deduplicate by projectTitle / freelancer pair so only 1 real card is rendered
+      const uniqueMap = new Map<string, EscrowItem>();
+      for (const item of validEscrows) {
+        const key = `${item.projectTitle}_${item.freelancerName}`.toLowerCase();
+        if (!uniqueMap.has(key) || (item.amountEth && !uniqueMap.get(key)?.amountEth)) {
+          uniqueMap.set(key, item);
+        }
+      }
+
+      setEscrows(Array.from(uniqueMap.values()));
     };
 
     loadEscrows();

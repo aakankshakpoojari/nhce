@@ -68,13 +68,8 @@ export default function EscrowCard({ escrow, onRelease }: EscrowCardProps) {
                 : `$${escrow.amountUSD}`}
             </span>
             {escrow.amountUSD > 0 && (
-              <span className="text-xs text-foreground font-semibold">
+              <span className="text-xs text-foreground font-semibold font-mono">
                 (${escrow.amountUSD < 1 ? escrow.amountUSD.toFixed(2) : escrow.amountUSD.toLocaleString()})
-              </span>
-            )}
-            {escrow.amountINR > 0 && (
-              <span className="text-[11px] text-muted">
-                ₹{escrow.amountINR.toLocaleString("en-IN")}
               </span>
             )}
           </div>
