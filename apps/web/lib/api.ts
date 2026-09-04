@@ -217,6 +217,19 @@ export function selectFreelancer(token: string, jobId: string, applicationId: st
   });
 }
 
+export function fundJobEscrow(
+  token: string,
+  jobId: string,
+  escrowAddress: string,
+  freelancerAddress?: string
+): Promise<{ message: string; job: Job }> {
+  return apiFetch<{ message: string; job: Job }>(`/jobs/${jobId}/fund`, {
+    method: "POST",
+    token,
+    body: JSON.stringify({ escrowAddress, freelancerAddress }),
+  });
+}
+
 /* ------------------------------ Profile ------------------------------ */
 
 export function getProfile(token: string): Promise<{ user: Profile }> {

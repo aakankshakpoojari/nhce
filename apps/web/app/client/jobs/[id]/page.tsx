@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  ArrowRight,
   CalendarDays,
   CheckCircle2,
   Eye,
@@ -268,32 +269,45 @@ export default function ClientJobDetailPage() {
 
       {/* Selected freelancer banner */}
       {selectionMade && (
-        <div className="p-6 rounded-2xl bg-moss/10 border border-moss/30 flex flex-col md:flex-row md:items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-moss text-background flex items-center justify-center shrink-0">
-            <UserCheck className="w-6 h-6" />
-          </div>
-          <div className="flex-1">
-            <div className="text-sm font-bold text-foreground flex items-center gap-2">
-              Freelancer selected: {selectedApp?.freelancer?.name || "Freelancer"}
-              {selectedApp?.freelancer && (
-                <span className="text-xs text-muted flex items-center gap-0.5">
-                  <Star className="w-3.5 h-3.5 text-[#F59E0B]" />
-                  {selectedApp.freelancer.rating?.toFixed(1)}
-                </span>
-              )}
+        <div className="p-6 rounded-2xl bg-moss/10 border border-moss/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-moss text-background flex items-center justify-center shrink-0">
+              <UserCheck className="w-6 h-6" />
             </div>
-            <p className="text-xs text-muted mt-1">
-              This job is now in the <span className="font-mono text-moss">FREELANCER_SELECTED</span> state. Escrow and contract setup arrive in a later phase.
-            </p>
-          </div>
-          {selectedApp && (
-            <div className="text-left md:text-right shrink-0">
-              <div className="text-sm font-extrabold font-mono text-foreground">
-                {formatBudget({ budget: selectedApp.requestedRate, tokenSymbol: job.tokenSymbol })}
+            <div>
+              <div className="text-base font-extrabold text-foreground flex items-center gap-2">
+                Freelancer Selected: <span className="text-moss">{selectedApp?.freelancer?.name || "Freelancer"}</span>
+                {selectedApp?.freelancer && (
+                  <span className="text-xs text-muted flex items-center gap-0.5 font-normal">
+                    <Star className="w-3.5 h-3.5 text-[#F59E0B]" />
+                    {selectedApp.freelancer.rating?.toFixed(1)}
+                  </span>
+                )}
               </div>
-              <div className="text-xs text-muted">{selectedApp.deliveryDays} delivery {selectedApp.deliveryDays === 1 ? "day" : "days"}</div>
+              <p className="text-xs text-muted mt-0.5">
+                The freelancer has been hired! Deploy a smart contract escrow vault on Sepolia Devnet to lock the project budget and initiate work.
+              </p>
             </div>
-          )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+            {selectedApp && (
+              <div className="text-left sm:text-right">
+                <div className="text-sm font-extrabold font-mono text-foreground">
+                  {formatBudget({ budget: job.budget, tokenSymbol: job.tokenSymbol })}
+                </div>
+                <div className="text-xs text-muted">{selectedApp.deliveryDays} delivery {selectedApp.deliveryDays === 1 ? "day" : "days"}</div>
+              </div>
+            )}
+
+            <Link
+              href={`/client/create-escrow?jobId=${job.id}&title=${encodeURIComponent(job.title)}&freelancerAddress=${encodeURIComponent(selectedApp?.walletAddress || selectedApp?.freelancer?.email || "")}&amountETH=${job.budget}`}
+              className="px-5 py-3 rounded-xl bg-moss hover:bg-[#BEF264] text-background text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-[#84CC16]/20 flex items-center gap-2"
+            >
+              <span>Fund & Deploy Escrow Vault</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       )}
 
