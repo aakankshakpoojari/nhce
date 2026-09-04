@@ -6,7 +6,12 @@
  * Attaches the JWT from AuthContext's localStorage and normalizes errors.
  */
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "") + "/api";
+const getApiBase = () => {
+  const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "");
+  return base.endsWith("/api") ? base : `${base}/api`;
+};
+
+const API_BASE = getApiBase();
 
 export class ApiError extends Error {
   status: number;
@@ -227,6 +232,49 @@ export function fundJobEscrow(
     method: "POST",
     token,
     body: JSON.stringify({ escrowAddress, freelancerAddress }),
+  });
+}
+
+export function fetchMyProjects(token: string): Promise<{ jobs: Job[] }> {
+  return apiFetch<{ jobs: Job[] }>("/jobs/my-projects", { token });
+}
+
+export function submitMilestoneProof(
+  token: string,
+  milestoneId: string,
+  data: { deliverableLink?: string; githubPrUrl?: string; deploymentUrl?: string }
+): Promise<{ message: string; milestone: any }> {
+  return apiFetch<{ message: string; milestone: any }>(`/milestones/${milestoneId}/submit`, {
+    method: "POST",
+    token,
+    body: JSON.stringify(data),
+  });
+}
+
+export function verifyMilestoneOracle(
+  token: string,
+  milestoneId: string
+): Promise<{
+  message: string;
+  milestone: any;
+  verificationScore: number;
+  aiSummary: string;
+  status: string;
+  pipelineResults: any;
+}> {
+  return apiFetch<any>(`/oracle/milestone/${milestoneId}/verify`, {
+    method: "POST",
+    token,
+  });
+}
+
+export function releaseMilestonePayment(
+  token: string,
+  milestoneId: string
+): Promise<{ message: string; milestone: any; txHash?: string }> {
+  return apiFetch<{ message: string; milestone: any; txHash?: string }>(`/milestones/${milestoneId}/release`, {
+    method: "POST",
+    token,
   });
 }
 

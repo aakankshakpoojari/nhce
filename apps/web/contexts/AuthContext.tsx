@@ -33,7 +33,12 @@ interface AuthContextType {
   updateUserRole: (role: "CLIENT" | "FREELANCER" | "ADMIN") => void;
 }
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "") + "/api";
+const getApiBase = () => {
+  const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "");
+  return base.endsWith("/api") ? base : `${base}/api`;
+};
+
+const API_BASE = getApiBase();
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -65,6 +70,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchMe = async (authToken: string) => {
+    // Synthetic local admin or mock tokens should skip remote backend verification
+    if (authToken.startsWith("admin_auth_jwt_") || authToken.startsWith("mock_jwt_token_")) {
+      const savedUser = localStorage.getItem("w3hire_user");
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          console.error("Failed to parse saved user", e);
+        }
+      }
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/auth/me`, {
         headers: {
@@ -79,12 +98,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (userData.walletAddress) {
           localStorage.setItem("w3hire_active_address", userData.walletAddress);
         }
-      } else {
+      } else if (res.status === 401 || res.status === 403) {
         // Token invalid/expired
         logout();
+      } else {
+        // Non-auth server error (500, 503, etc.) - retain local cached session
+        const savedUser = localStorage.getItem("w3hire_user");
+        if (savedUser) {
+          try {
+            setUser(JSON.parse(savedUser));
+          } catch (e) {}
+        }
       }
     } catch (err) {
-      console.warn("Could not fetch user profile from API.", err);
+      console.warn("Could not fetch user profile from API, retaining local session fallback.", err);
+      const savedUser = localStorage.getItem("w3hire_user");
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {}
+      }
     } finally {
       setIsLoading(false);
     }

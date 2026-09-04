@@ -211,6 +211,49 @@ export class JobController {
   }
 
   /**
+   * GET /api/jobs/my-projects
+   * Get active assigned projects for the authenticated user (freelancer or client).
+   */
+  public async getMyProjects(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      const jobs = await prisma.job.findMany({
+        where: {
+          OR: [
+            { freelancerId: userId },
+            { clientId: userId },
+            {
+              applications: {
+                some: {
+                  freelancerId: userId,
+                  status: ApplicationStatus.ACCEPTED
+                }
+              }
+            }
+          ]
+        },
+        include: {
+          client: { select: { id: true, name: true, email: true, rating: true, walletAddress: true } },
+          freelancer: { select: { id: true, name: true, email: true, rating: true, walletAddress: true } },
+          milestones: { orderBy: { createdAt: 'asc' } },
+          _count: { select: { applications: true } }
+        },
+        orderBy: { updatedAt: 'desc' }
+      });
+
+      res.json({ jobs });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to fetch assigned projects', message: error.message });
+    }
+  }
+
+  /**
    * GET /api/jobs/:id
    * Get specific job details.
    */

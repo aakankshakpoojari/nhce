@@ -25,7 +25,7 @@ async function bootstrap() {
   const httpServer = createServer(app);
   initSocket(httpServer);
 
-  httpServer.listen(PORT, () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
     console.log(` Server running on http://localhost:${PORT}`);
     console.log(` Realtime (Socket.IO) gateway attached`);

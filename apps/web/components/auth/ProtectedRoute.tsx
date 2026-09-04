@@ -98,8 +98,8 @@ export default function ProtectedRoute({
   // If role check fails (e.g. freelancer trying to access client dashboard or vice versa)
   if (effectiveRoles && !effectiveRoles.includes(user.role as "CLIENT" | "FREELANCER")) {
     const isClientAccessingFreelancer = user.role === "CLIENT";
-    const dest = isClientAccessingFreelancer ? "/client" : "/bounties";
-    const destName = isClientAccessingFreelancer ? "Client Workspace" : "Freelancer Portal";
+    const dest = isClientAccessingFreelancer ? "/client/jobs" : "/bounties";
+    const destName = isClientAccessingFreelancer ? "Client Dashboard" : "Freelancer Bounties";
 
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center p-6 text-center">

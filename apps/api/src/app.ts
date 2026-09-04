@@ -12,7 +12,14 @@ import { errorHandler } from './middlewares/errorHandler.middleware';
 const app: Express = express();
 
 // Middlewares
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
