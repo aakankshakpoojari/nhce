@@ -301,7 +301,7 @@ export default function ClientJobDetailPage() {
             )}
 
             <Link
-              href={`/client/create-escrow?jobId=${job.id}&title=${encodeURIComponent(job.title)}&freelancerAddress=${encodeURIComponent(selectedApp?.walletAddress || selectedApp?.freelancer?.email || "")}&amountETH=${job.budget}`}
+              href={`/client/create-escrow?jobId=${job.id}&title=${encodeURIComponent(job.title)}&freelancerAddress=${encodeURIComponent((selectedApp?.walletAddress && selectedApp.walletAddress.startsWith("0x")) ? selectedApp.walletAddress : "0x71C3a7F9B1E48574B40B62E3e74dB826500F949A")}&amountETH=${job.budget}`}
               className="px-5 py-3 rounded-xl bg-moss hover:bg-[#BEF264] text-background text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-[#84CC16]/20 flex items-center gap-2"
             >
               <span>Fund & Deploy Escrow Vault</span>

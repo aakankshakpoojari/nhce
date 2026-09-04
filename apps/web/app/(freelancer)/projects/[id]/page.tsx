@@ -52,6 +52,9 @@ export default function ProjectWorkspacePage() {
   // Release & Dispute State
   const [releasingMilestoneId, setReleasingMilestoneId] = useState<string | null>(null);
   const [txMessage, setTxMessage] = useState<string>("");
+  const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
+  const [rejectingMilestone, setRejectingMilestone] = useState<any>(null);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState<string>("");
 
   // Chat State
   const [messages, setMessages] = useState<Array<{ sender: string; text: string; time: string }>>([
@@ -119,6 +122,8 @@ export default function ProjectWorkspacePage() {
         githubPrUrl: activeMatch?.githubPrUrl || null,
         deploymentUrl: activeMatch?.deploymentUrl || null,
         submittedAt: activeMatch?.submittedAt || null,
+        rejectionCount: activeMatch?.rejectionCount || 0,
+        rejectionReason: activeMatch?.rejectionReason || null,
       };
     });
   };
@@ -318,6 +323,62 @@ export default function ProjectWorkspacePage() {
     setTxMessage(`Milestone ${milestone.num} submission declined. Issue escalated to platform support.`);
   };
 
+  const handleOpenRejectModal = (milestone: any) => {
+    setRejectingMilestone(milestone);
+    setRejectionReasonInput("");
+    setShowRejectModal(true);
+  };
+
+  const handleConfirmReject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectingMilestone) return;
+
+    const currentCount = (rejectingMilestone.rejectionCount || 0) + 1;
+    const isDisputed = currentCount >= 3;
+    const newStatus = isDisputed ? "DISPUTED" : "REJECTED_NEEDS_REVISION";
+
+    setJob((prev: any) => {
+      const updatedMs = prev.milestones.map((m: any) => {
+        if (m.id === rejectingMilestone.id) {
+          return {
+            ...m,
+            status: newStatus,
+            rejectionCount: currentCount,
+            rejectionReason: rejectionReasonInput || "Client requested revisions for this deliverable.",
+          };
+        }
+        return m;
+      });
+      saveMilestonesToStorage(updatedMs);
+      return { ...prev, milestones: updatedMs };
+    });
+
+    if (isDisputed) {
+      setTxMessage(`⚠️ Warning ${currentCount}/3 reached! Milestone ${rejectingMilestone.num} automatically escalated to DISPUTE. Vault escrow funds locked.`);
+    } else {
+      setTxMessage(`⚠️ Warning ${currentCount}/3 issued to freelancer for Milestone ${rejectingMilestone.num}. Feedback saved.`);
+    }
+    setShowRejectModal(false);
+  };
+
+  const handleEscalateToDispute = (milestone: any) => {
+    setJob((prev: any) => {
+      const updatedMs = prev.milestones.map((m: any) => {
+        if (m.id === milestone.id) {
+          return {
+            ...m,
+            status: "DISPUTED",
+            rejectionReason: m.rejectionReason || "Client manually escalated unverified work to platform dispute.",
+          };
+        }
+        return m;
+      });
+      saveMilestonesToStorage(updatedMs);
+      return { ...prev, milestones: updatedMs };
+    });
+    setTxMessage(`🚨 Milestone ${milestone.num} moved to DISPUTE status. Vault escrow funds locked for arbitration.`);
+  };
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -436,6 +497,8 @@ export default function ProjectWorkspacePage() {
                   const isSubmitted = milestone.status === "SUBMITTED";
                   const isApproved = milestone.status === "APPROVED";
                   const isReleased = milestone.status === "RELEASED";
+                  const isNeedsRevision = milestone.status === "REJECTED_NEEDS_REVISION";
+                  const isDisputed = milestone.status === "DISPUTED";
                   const isDeclined = milestone.status === "DECLINED";
                   const isLocked = milestone.status === "LOCKED";
 
@@ -448,7 +511,11 @@ export default function ProjectWorkspacePage() {
                           : isApproved
                           ? "border-moss/30"
                           : isSubmitted
-                          ? "border-[#F59E0B]/40"
+                          ? "border-amber-500/40 bg-amber-500/5"
+                          : isNeedsRevision
+                          ? "border-amber-500/50 bg-amber-500/10"
+                          : isDisputed
+                          ? "border-[#EF4444]/60 bg-[#EF4444]/10"
                           : isDeclined
                           ? "border-[#EF4444]/40 bg-[#EF4444]/5"
                           : isLocked
@@ -478,7 +545,11 @@ export default function ProjectWorkspacePage() {
                                 : isApproved
                                 ? "bg-moss/10 text-moss border-moss/30"
                                 : isSubmitted
-                                ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30"
+                                ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                                : isNeedsRevision
+                                ? "bg-amber-500/25 text-amber-300 border-amber-500/50"
+                                : isDisputed
+                                ? "bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/40 font-extrabold"
                                 : isDeclined
                                 ? "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30"
                                 : isLocked
@@ -492,6 +563,10 @@ export default function ProjectWorkspacePage() {
                               ? "Oracle Verified"
                               : isSubmitted
                               ? "Under Client Review"
+                              : isNeedsRevision
+                              ? `Needs Revision (Warning ${milestone.rejectionCount || 1}/3)`
+                              : isDisputed
+                              ? "Escrow Disputed"
                               : isDeclined
                               ? "Declined"
                               : isLocked
@@ -500,6 +575,45 @@ export default function ProjectWorkspacePage() {
                           </span>
                         </div>
                       </div>
+
+                      {/* Warning Box for Rejection */}
+                      {milestone.rejectionReason && !isDisputed && (
+                        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 space-y-1 text-xs font-mono">
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="flex items-center gap-1.5">
+                              <ExclamationTriangleIcon className="w-4 h-4 text-amber-400" />
+                              Rejection Warning {milestone.rejectionCount || 1} of 3 Issued by Client
+                            </span>
+                            <span className="text-[10px] uppercase bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/40">
+                              Revision Required
+                            </span>
+                          </div>
+                          <p className="text-muted leading-relaxed">"{milestone.rejectionReason}"</p>
+                        </div>
+                      )}
+
+                      {/* Dispute Banner if warnings reached 3 or escalated */}
+                      {isDisputed && (
+                        <div className="p-4 rounded-xl bg-[#EF4444]/20 border border-[#EF4444]/50 text-[#EF4444] space-y-1.5 text-xs font-mono">
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="flex items-center gap-1.5 text-sm">
+                              <ExclamationTriangleIcon className="w-4.5 h-4.5 text-[#EF4444]" />
+                              ESCROW DISPUTE ACTIVE (Escrow Funds Locked)
+                            </span>
+                            <span className="text-[10px] uppercase bg-[#EF4444]/30 px-2 py-0.5 rounded border border-[#EF4444]/50">
+                              In Arbitration
+                            </span>
+                          </div>
+                          <p className="text-muted text-[11px] leading-relaxed">
+                            This milestone has reached the 3-warning rejection limit or was escalated by the client. Escrow funds are locked in the smart contract vault pending platform arbitration.
+                          </p>
+                          {milestone.rejectionReason && (
+                            <p className="text-foreground text-[11px] italic border-t border-[#EF4444]/30 pt-1">
+                              Reason: "{milestone.rejectionReason}"
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {/* Oracle Authenticity Score Badge */}
                       {milestone.aiReviewScore && (
@@ -559,25 +673,27 @@ export default function ProjectWorkspacePage() {
 
                       {/* Action Controls strictly separated by role */}
                       <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-surface-border">
-                        {/* FREELANCER CONTROLS: Upload / Update Proof Only */}
-                        {!isClient && !isReleased && !isLocked && (
+                        {/* FREELANCER CONTROLS: Upload / Resubmit Proof Only */}
+                        {!isClient && !isReleased && !isLocked && !isDisputed && (
                           <button
                             onClick={() => handleOpenSubmitModal(milestone)}
                             className="px-4 py-2 rounded-xl bg-moss hover:bg-[#BEF264] text-background text-xs font-bold transition shadow"
                           >
-                            {isSubmitted || isDeclined ? `Update Milestone ${milestone.num} Proof` : `Submit Milestone ${milestone.num} Proof`}
+                            {isSubmitted || isNeedsRevision || isDeclined
+                              ? `Resubmit Milestone ${milestone.num} Proof`
+                              : `Submit Milestone ${milestone.num} Proof`}
                           </button>
                         )}
 
-                        {/* CLIENT CONTROLS: Run Oracle, Release 25%, Decline */}
-                        {isClient && !isReleased && !isLocked && (
+                        {/* CLIENT CONTROLS: Run Oracle, Accept & Release 25%, Reject with Warning, Escalate */}
+                        {isClient && !isReleased && !isLocked && !isDisputed && (
                           <div className="flex flex-wrap items-center gap-2.5 w-full justify-between">
                             {/* Run Oracle AI Evaluation Button (Client Only) */}
-                            {(isSubmitted || isApproved) && (
+                            {(isSubmitted || isApproved || isNeedsRevision) && (
                               <button
                                 onClick={() => handleRunOracleVerification(milestone.id)}
                                 disabled={verifyingMilestoneId === milestone.id}
-                                className="px-4 py-2 rounded-xl bg-moss/20 hover:bg-moss/30 border border-moss/40 text-moss text-xs font-semibold transition flex items-center gap-1.5 disabled:opacity-50"
+                                className="px-3.5 py-2 rounded-xl bg-moss/20 hover:bg-moss/30 border border-moss/40 text-moss text-xs font-semibold transition flex items-center gap-1.5 disabled:opacity-50"
                               >
                                 <ShieldCheckIcon className="w-4 h-4" />
                                 {verifyingMilestoneId === milestone.id
@@ -586,9 +702,9 @@ export default function ProjectWorkspacePage() {
                               </button>
                             )}
 
-                            {/* Release 25% Payment & Decline Buttons (Client Only) */}
-                            {(isSubmitted || isApproved) && (
-                              <div className="flex items-center gap-2">
+                            {/* Release 25%, Reject & Issue Warning, Escalate Buttons */}
+                            {(isSubmitted || isApproved || isNeedsRevision) && (
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <button
                                   onClick={() => handleReleasePayment(milestone)}
                                   disabled={releasingMilestoneId === milestone.id}
@@ -596,20 +712,26 @@ export default function ProjectWorkspacePage() {
                                 >
                                   <CheckCircleIcon className="w-4 h-4" />
                                   {releasingMilestoneId === milestone.id
-                                    ? "Processing 25% Payout…"
-                                    : `Release 25% Payment (${milestone.amount} ${milestone.tokenSymbol})`}
+                                    ? "Processing Payout…"
+                                    : `Accept & Release 25% (${milestone.amount} ${milestone.tokenSymbol})`}
                                 </button>
                                 <button
-                                  onClick={() => handleDeclinePayment(milestone)}
-                                  className="px-3.5 py-2 rounded-xl bg-[#EF4444]/10 hover:bg-[#EF4444]/20 border border-[#EF4444]/30 text-[#EF4444] text-xs font-medium transition flex items-center gap-1"
+                                  onClick={() => handleOpenRejectModal(milestone)}
+                                  className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold transition flex items-center gap-1"
                                 >
                                   <ExclamationTriangleIcon className="w-3.5 h-3.5" />
-                                  Decline
+                                  Reject (Warning {(milestone.rejectionCount || 0) + 1}/3)
+                                </button>
+                                <button
+                                  onClick={() => handleEscalateToDispute(milestone)}
+                                  className="px-3 py-2 rounded-xl bg-[#EF4444]/10 hover:bg-[#EF4444]/20 border border-[#EF4444]/30 text-[#EF4444] text-xs font-medium transition flex items-center gap-1"
+                                >
+                                  Escalate to Dispute
                                 </button>
                               </div>
                             )}
 
-                            {!isSubmitted && !isApproved && (
+                            {!isSubmitted && !isApproved && !isNeedsRevision && (
                               <span className="text-xs text-muted font-mono italic">
                                 Waiting for freelancer to submit deliverable proof…
                               </span>
@@ -818,6 +940,74 @@ export default function ProjectWorkspacePage() {
                     className="px-5 py-2.5 rounded-xl bg-moss hover:bg-[#BEF264] text-background font-bold uppercase tracking-wider transition disabled:opacity-50"
                   >
                     {isSubmitting ? "Submitting Proof…" : `Submit Milestone ${submittingMilestone.num}`}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Client Rejection Warning Modal */}
+        {showRejectModal && rejectingMilestone && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-surface border border-surface-border rounded-2xl p-6 max-w-lg w-full space-y-5 shadow-2xl"
+            >
+              <div className="flex justify-between items-center pb-3 border-b border-surface-border">
+                <div>
+                  <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
+                    <ExclamationTriangleIcon className="w-5 h-5 text-amber-400" />
+                    <span>Issue Warning & Reject Milestone {rejectingMilestone.num}</span>
+                  </h3>
+                  <span className="text-[11px] font-mono text-amber-400 mt-0.5 block">
+                    Warning {(rejectingMilestone.rejectionCount || 0) + 1} of 3 Max Warnings Allowed
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="text-muted hover:text-foreground text-sm font-mono"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {(rejectingMilestone.rejectionCount || 0) + 1 >= 3 && (
+                <div className="p-3.5 rounded-xl bg-[#EF4444]/20 border border-[#EF4444]/40 text-[#EF4444] text-xs font-mono">
+                  <strong>⚠️ Final Warning Notice:</strong> Issuing this 3rd warning will automatically escalate Milestone {rejectingMilestone.num} and lock escrow funds in platform DISPUTE mode.
+                </div>
+              )}
+
+              <form onSubmit={handleConfirmReject} className="space-y-4 text-xs font-mono">
+                <div>
+                  <label className="block text-muted mb-1 uppercase text-[10px]">
+                    Rejection Feedback / Required Revisions
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={rejectionReasonInput}
+                    onChange={(e) => setRejectionReasonInput(e.target.value)}
+                    placeholder="Specify clearly what changes or additions are required before this milestone can be accepted..."
+                    className="w-full bg-background border border-surface-border rounded-xl p-3 text-foreground placeholder:text-muted focus:border-amber-400 outline-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t border-surface-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectModal(false)}
+                    className="px-4 py-2.5 rounded-xl border border-surface-border text-muted hover:text-foreground transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-background font-bold uppercase tracking-wider transition shadow"
+                  >
+                    Confirm Rejection & Issue Warning {(rejectingMilestone.rejectionCount || 0) + 1}/3
                   </button>
                 </div>
               </form>

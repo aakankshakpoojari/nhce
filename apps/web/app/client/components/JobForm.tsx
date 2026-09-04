@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Loader2, Plus, X } from "lucide-react";
 import { TOKEN_OPTIONS } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import WalletNoticeBanner from "@/components/ui/WalletNoticeBanner";
+import MetaMaskModal from "@/components/metamask-modal";
 
 export interface JobFormValues {
   title: string;
@@ -31,9 +34,15 @@ const EMPTY: JobFormValues = {
 };
 
 export default function JobForm({ initialValues, submitLabel = "Create Job", isSubmitting, error, onSubmit }: JobFormProps) {
+  const { user } = useAuth();
   const [values, setValues] = useState<JobFormValues>({ ...EMPTY, ...initialValues });
   const [skillInput, setSkillInput] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
+  const isWalletConnected = Boolean(
+    user?.walletAddress || (typeof window !== "undefined" && localStorage.getItem("w3hire_active_address"))
+  );
 
   const set = <K extends keyof JobFormValues>(key: K, value: JobFormValues[K]) => {
     setValues((v) => ({ ...v, [key]: value }));
@@ -90,6 +99,11 @@ export default function JobForm({ initialValues, submitLabel = "Create Job", isS
   };
 
   const handleSubmit = (status: "DRAFT" | "PUBLISHED") => {
+    if (!isWalletConnected) {
+      setValidationError("Wallet Connection Required: You cannot post a job or save a draft without connecting your Web3 wallet first. Please connect your MetaMask wallet.");
+      setIsWalletModalOpen(true);
+      return;
+    }
     const err = validate();
     if (err) {
       setValidationError(err);
@@ -106,6 +120,11 @@ export default function JobForm({ initialValues, submitLabel = "Create Job", isS
 
   return (
     <div className="space-y-6">
+      <WalletNoticeBanner
+        role="client"
+        customMessage="Please connect your Web3 wallet before posting a job. An active wallet is required for smart contract escrow initialization and milestone locking."
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left column */}
         <div className="space-y-5">
@@ -247,6 +266,12 @@ export default function JobForm({ initialValues, submitLabel = "Create Job", isS
           {isSubmitting ? "Saving…" : submitLabel}
         </button>
       </div>
+
+      <MetaMaskModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        role="client"
+      />
     </div>
   );
 }

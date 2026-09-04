@@ -57,7 +57,6 @@ export default function Navbar() {
     { name: "Marketplace", href: "/bounties" },
     { name: "My Applications", href: "/applications" },
     { name: "My Projects", href: "/projects" },
-    { name: "Messages", href: "/messages" },
     { name: "Swap", href: "/swap" },
     { name: "Stablecoins", href: "/stablecoins" },
     { name: "Wallet", href: "/wallet" },
