@@ -99,11 +99,22 @@ export default function MessagesView({ portal = "freelancer" }: MessagesViewProp
 
   const projectLabel = (c: ConversationDTO) => c.job?.title || "Direct message";
 
-  // Pick the first conversation once the list is available.
+  // A conversation id may be passed via `?c=<id>` (e.g. from the floating
+  // messaging panel). Read it once so it only steers the initial selection.
+  const requestedConvIdRef = useRef<string | null>(null);
+  if (requestedConvIdRef.current === null) {
+    requestedConvIdRef.current =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("c") ?? ""
+        : "";
+  }
+
+  // Pick the requested conversation (or the first one) once the list is available.
   useEffect(() => {
-    if (!activeConvId && conversations.length > 0) {
-      setActiveConvId(conversations[0].id);
-    }
+    if (activeConvId || conversations.length === 0) return;
+    const requested = requestedConvIdRef.current;
+    const match = requested && conversations.find((c) => c.id === requested);
+    setActiveConvId(match ? match.id : conversations[0].id);
   }, [conversations, activeConvId]);
 
   const activeConv = conversations.find((c) => c.id === activeConvId) ?? null;
