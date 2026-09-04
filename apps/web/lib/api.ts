@@ -134,6 +134,48 @@ export interface Profile {
   createdAt: string;
 }
 
+/* ------------------------------ Stablecoin tracker ------------------------------ */
+
+export type StablecoinDataStatus = "LIVE" | "CACHED" | "FALLBACK";
+
+export interface StablecoinMetadata {
+  peg: string;
+  pegTargetUsd: number | null;
+  networks: string[];
+  settlementRelevance: "HIGH" | "MEDIUM" | "LOW";
+  settlementReadiness: "READY" | "CONDITIONAL" | "NOT_RECOMMENDED";
+  notes?: string;
+}
+
+export interface StablecoinMarket {
+  id: string;
+  symbol: string;
+  name: string;
+  price: number | null;
+  priceChange24h: number | null;
+  marketCap: number | null;
+  marketCapRank: number | null;
+  volume24h: number | null;
+  lastUpdated: string | null;
+  pegDeviation: number | null;
+  metadata: StablecoinMetadata | null;
+}
+
+export interface StablecoinSummary {
+  trackedCount: number;
+  totalMarketCap: number;
+  totalVolume24h: number;
+}
+
+export interface StablecoinMarketsResponse {
+  source: string;
+  dataStatus: StablecoinDataStatus;
+  lastUpdated: string;
+  isFallback: boolean;
+  coins: StablecoinMarket[];
+  summary: StablecoinSummary;
+}
+
 /* ------------------------------ API calls ------------------------------ */
 
 export function fetchJobs(params: Record<string, string | number | undefined> = {}): Promise<JobListResponse> {
@@ -279,6 +321,10 @@ export function releaseMilestonePayment(
 }
 
 /* ------------------------------ Profile ------------------------------ */
+
+export function fetchStablecoinMarkets(): Promise<{ success: boolean; data: StablecoinMarketsResponse }> {
+  return apiFetch<{ success: boolean; data: StablecoinMarketsResponse }>("/stablecoins");
+}
 
 export function getProfile(token: string): Promise<{ user: Profile }> {
   return apiFetch<{ user: Profile }>("/auth/profile", { token });

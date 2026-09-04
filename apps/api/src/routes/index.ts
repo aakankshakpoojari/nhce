@@ -16,6 +16,7 @@ import disputeRoutes from './dispute.routes';
 import webhookRoutes from './webhook.routes';
 import conversationRoutes from './conversation.routes';
 import oracleRoutes from './oracle.routes';
+import stablecoinRoutes from './stablecoin.routes';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/subscription', subscriptionRoutes);
 router.use('/disputes', disputeRoutes);
 router.use('/webhooks', webhookRoutes);
 router.use('/conversations', conversationRoutes);
+router.use('/stablecoins', stablecoinRoutes);
 
 export default router;

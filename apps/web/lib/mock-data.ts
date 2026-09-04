@@ -107,6 +107,7 @@ export interface MockProject {
   clientName: string;
   client?: MockClientStats;
   budget: string;
+  rawBudget?: number;
   status: string;
   tags?: string[];
   nextMilestone: string;

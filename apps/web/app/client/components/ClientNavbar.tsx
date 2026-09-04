@@ -26,6 +26,7 @@ const NAV_LINKS = [
   { name: "Browse Talent", href: "/client/freelancers" },
   { name: "Escrow Vaults", href: "/client/escrows" },
   { name: "Swap", href: "/swap" },
+  { name: "Stablecoins", href: "/stablecoins" },
   { name: "Wallet", href: "/wallet" },
 ];
 

@@ -39,7 +39,7 @@ export default function ProjectsPage() {
         isMine: true,
         tags: j.skills || ["Web3", "Smart Contracts"],
         durationWeeks: 4,
-        nextMilestone: j.milestones?.[0]?.title || "Milestone 1: Deliverable Proof Submission",
+        nextMilestone: (j.milestones?.[0] as { title?: string } | undefined)?.title || "Milestone 1: Deliverable Proof Submission",
       }));
     }
 

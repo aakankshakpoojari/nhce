@@ -33,6 +33,9 @@ const envSchema = z.object({
   USDT_SEPOLIA_ADDRESS: z.string().default('0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0'),
   GITHUB_ACCESS_TOKEN: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  // Public market-data provider base URL for the stablecoin tracker.
+  // The public CoinGecko demo endpoint requires no API key.
+  STABLECOIN_API_BASE_URL: z.string().default('https://api.coingecko.com/api/v3'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
