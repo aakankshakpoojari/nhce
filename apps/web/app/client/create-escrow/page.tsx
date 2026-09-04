@@ -103,13 +103,17 @@ function CreateEscrowForm() {
       // Save escrow item to local storage for instant dashboard updates
       if (typeof window !== "undefined") {
         const amountNum = parseFloat(amountETH || "0.01") || 0.01;
+        const amountUSD = amountNum >= 1 ? Math.round(amountNum * 3000) : Number((amountNum * 3000).toFixed(2));
+        const amountINR = Math.round(amountNum * 250000);
         const newEscrow = {
           id: `esc-${Date.now()}`,
           projectTitle: projectTitle || "Smart Contract Escrow",
           freelancerName: targetFreelancer.slice(0, 6) + "..." + targetFreelancer.slice(-4),
           freelancerAvatar: "",
-          amountUSD: Math.round(amountNum * 3000),
-          amountINR: Math.round(amountNum * 250000),
+          amountEth: amountETH || "0.01",
+          tokenSymbol: "ETH",
+          amountUSD,
+          amountINR,
           status: "locked",
           createdAt: "Just now",
           txHash: hash || `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}`,

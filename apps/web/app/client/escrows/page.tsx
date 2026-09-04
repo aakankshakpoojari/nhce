@@ -9,16 +9,59 @@ export default function ClientEscrowsPage() {
   const [escrows, setEscrows] = useState<EscrowItem[]>([]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedEscrows = localStorage.getItem("w3hire_client_escrows");
-      if (savedEscrows) {
-        try {
-          setEscrows(JSON.parse(savedEscrows));
-        } catch (e) {
-          console.error(e);
+    const loadEscrows = async () => {
+      let combined: EscrowItem[] = [];
+
+      if (typeof window !== "undefined") {
+        const savedEscrows = localStorage.getItem("w3hire_client_escrows");
+        if (savedEscrows) {
+          try {
+            combined = JSON.parse(savedEscrows);
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        const token = localStorage.getItem("w3hire_auth_token");
+        if (token) {
+          try {
+            const { fetchMyJobs } = await import("@/lib/api");
+            const res = await fetchMyJobs(token);
+            if (res.jobs) {
+              const apiEscrows: EscrowItem[] = res.jobs
+                .filter((j) => j.escrowAddress || j.status === "IN_PROGRESS" || j.status === "FREELANCER_SELECTED" || j.status === "COMPLETED")
+                .map((j) => ({
+                  id: j.id,
+                  projectTitle: j.title,
+                  freelancerName: j.freelancer?.name || j.freelancer?.email || "Freelancer",
+                  freelancerAvatar: "",
+                  amountEth: String(j.budget),
+                  tokenSymbol: j.tokenSymbol || "ETH",
+                  amountUSD: j.budget >= 1 ? Math.round(j.budget * 3000) : Number((j.budget * 3000).toFixed(2)),
+                  amountINR: Math.round(j.budget * 250000),
+                  status: j.status === "COMPLETED" ? "released" : "locked",
+                  createdAt: j.createdAt,
+                  txHash: j.escrowAddress || "0x851a1994eb212b6a1ab423121c96a50cc2ca3ed69828f39d639432d1a5d48bb2",
+                  escrowAddress: j.escrowAddress || undefined,
+                }));
+
+              const existingIds = new Set(combined.map((e) => e.id));
+              for (const apiE of apiEscrows) {
+                if (!existingIds.has(apiE.id)) {
+                  combined.push(apiE);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("[escrows] Could not load API escrows:", e);
+          }
         }
       }
-    }
+
+      setEscrows(combined);
+    };
+
+    loadEscrows();
   }, []);
 
   const handleRelease = (id: string) => {

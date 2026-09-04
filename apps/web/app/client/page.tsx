@@ -132,6 +132,8 @@ export default function ClientDashboardPage() {
       projectTitle: activeProjectForApplicants.title,
       freelancerName: applicant.name,
       freelancerAvatar: applicant.avatar,
+      amountEth: (applicant.proposedUSD / 3000).toFixed(4),
+      tokenSymbol: "ETH",
       amountUSD: applicant.proposedUSD,
       amountINR: applicant.proposedINR,
       status: "locked",
