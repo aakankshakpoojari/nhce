@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ParticleDrift from "@/components/ui/particle-drift";
 import { AuthProvider } from "@/contexts/AuthContext";
+import FloatingMessageButton from "@/components/navigation/FloatingMessageButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -59,6 +60,9 @@ export default function RootLayout({
           <div className="relative z-10 flex flex-col min-h-screen bg-transparent">
             {children}
           </div>
+
+          {/* Floating Message Quick Access Button */}
+          <FloatingMessageButton />
         </AuthProvider>
       </body>
     </html>

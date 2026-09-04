@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Star, ExternalLink, Zap, ShieldCheck, MessageSquare } from "lucide-react";
+import { ArrowLeft, Star, ExternalLink, Zap, ShieldCheck } from "lucide-react";
 import { freelancersList } from "@/lib/mock-data";
 
 export default function FreelancerDetailsPage() {
@@ -51,10 +51,6 @@ export default function FreelancerDetailsPage() {
             <button className="px-6 py-3.5 rounded-xl bg-moss hover:bg-[#BEF264] text-background font-bold text-sm transition-all shadow-[0_0_20px_rgba(132,204,22,0.15)] hover:shadow-[0_0_25px_rgba(190,242,100,0.3)] flex items-center justify-center gap-2">
               <Zap className="w-4 h-4" />
               Invite to Project
-            </button>
-            <button className="px-6 py-3.5 rounded-xl bg-background hover:bg-surface-border text-foreground border border-surface-border font-bold text-sm transition-all flex items-center justify-center gap-2">
-              <MessageSquare className="w-4 h-4" />
-              Send Message
             </button>
           </div>
         </section>
