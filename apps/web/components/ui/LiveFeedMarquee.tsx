@@ -128,7 +128,7 @@ export default function LiveFeedMarquee() {
         </div>
       </div>
 
-      <div className={`relative z-20 mt-32 flex justify-center w-full transition-all duration-1000 ${isAssembled ? "opacity-100" : "opacity-0"}`}>
+      <div className={`absolute inset-x-0 bottom-10 md:bottom-16 z-20 flex justify-center w-full transition-all duration-1000 ${isAssembled ? "opacity-100" : "opacity-0"}`}>
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}

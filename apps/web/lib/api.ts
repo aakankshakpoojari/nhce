@@ -131,6 +131,7 @@ export interface Profile {
   portfolioLinks: string[];
   jobsPostedCount: number;
   jobsAppliedCount: number;
+  onboardingCompleted: boolean;
   createdAt: string;
 }
 
@@ -290,6 +291,20 @@ export function updateProfile(
 ): Promise<{ message: string; user: Profile }> {
   return apiFetch<{ message: string; user: Profile }>("/auth/profile", {
     method: "PUT",
+    token,
+    body: JSON.stringify(body),
+  });
+}
+
+/* ------------------------------ Onboarding ------------------------------ */
+
+/** Persist the final onboarding payload and mark onboarding complete. */
+export function completeOnboarding(
+  token: string,
+  body: Partial<Pick<Profile, "name" | "bio" | "location" | "portfolioLinks">>
+): Promise<{ message: string; user: Profile }> {
+  return apiFetch<{ message: string; user: Profile }>("/auth/onboarding/complete", {
+    method: "POST",
     token,
     body: JSON.stringify(body),
   });

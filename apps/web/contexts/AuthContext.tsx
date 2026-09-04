@@ -7,8 +7,10 @@ export interface User {
   id: string;
   email: string;
   name?: string;
-  role: "CLIENT" | "FREELANCER" | "ADMIN";
+  role: "CLIENT" | "FREELANCER" | "JUROR" | "ADMIN";
   walletAddress?: string | null;
+  /** Post-signup onboarding state (absent for synthetic admin/offline sessions). */
+  onboardingCompleted?: boolean;
 }
 
 export const ADMIN_TEAM_ACCOUNTS = [
@@ -31,6 +33,8 @@ interface AuthContextType {
   connectWallet: (walletAddress: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   disconnectWallet: () => Promise<void>;
   updateUserRole: (role: "CLIENT" | "FREELANCER" | "ADMIN") => void;
+  /** Re-fetch the authenticated user from the backend (e.g. after email verification / onboarding). */
+  refreshUser: () => Promise<User | null>;
 }
 
 const getApiBase = () => {
@@ -383,6 +387,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUser = async (): Promise<User | null> => {
+    const authToken = token || localStorage.getItem("w3hire_auth_token");
+    if (!authToken) return null;
+
+    // Synthetic admin / offline-mock sessions have no backend row to refresh.
+    if (authToken.startsWith("admin_auth_jwt_") || authToken.startsWith("mock_jwt_token_")) {
+      return user;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!res.ok) return user;
+      const userData: User = await res.json();
+      setUser(userData);
+      localStorage.setItem("w3hire_user", JSON.stringify(userData));
+      return userData;
+    } catch {
+      return user;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -395,6 +422,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         connectWallet,
         disconnectWallet,
         updateUserRole,
+        refreshUser,
       }}
     >
       {children}

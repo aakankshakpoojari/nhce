@@ -66,9 +66,14 @@ model User {
   location          String?
   rating            Float            @default(5.0)
   portfolioLinks    String[]         @default([])
+  skills            String[]         @default([])
   isPro             Boolean          @default(false)
   jobsPostedCount   Int              @default(0)
   jobsAppliedCount  Int              @default(0)
+
+  // Post-signup profile-setup gate.
+  onboardingCompleted Boolean        @default(false)
+
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
