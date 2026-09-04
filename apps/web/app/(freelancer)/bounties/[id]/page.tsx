@@ -260,6 +260,24 @@ export default function BountyDetailPage() {
     }
 
     // Freelancer: apply
+    if (!user) {
+      return (
+        <div className="space-y-3">
+          <div className="p-4 rounded-xl bg-surface border border-moss/30 text-xs text-muted text-center space-y-1">
+            <span className="font-semibold text-foreground block">Sign in required to apply</span>
+            <p>Please sign in or create a freelancer account first to submit a proposal for this project.</p>
+          </div>
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="w-full px-6 py-3 bg-moss hover:bg-[#BEF264] text-background font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+          >
+            <Send className="w-4 h-4" />
+            First Login to Submit Proposal
+          </button>
+        </div>
+      );
+    }
+
     if (!showApplyForm) {
       return (
         <button

@@ -15,6 +15,7 @@ router.get('/', (req, res) => jobController.getJobs(req, res));
 
 // Authenticated collections (registered before /:id)
 router.get('/my', authenticateToken, (req, res) => jobController.getMyJobs(req, res));
+router.get('/my-projects', authenticateToken, (req, res) => jobController.getMyProjects(req, res));
 
 // Job details (optional auth so draft jobs stay private to their owner)
 router.get('/:id', optionalAuthenticate, (req, res) => jobController.getJobById(req, res));

@@ -15,6 +15,7 @@ import subscriptionRoutes from './subscription.routes';
 import disputeRoutes from './dispute.routes';
 import webhookRoutes from './webhook.routes';
 import conversationRoutes from './conversation.routes';
+import oracleRoutes from './oracle.routes';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/auth', authRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/applications', applicationRoutes);
 router.use('/milestones', milestoneRoutes);
+router.use('/oracle', oracleRoutes);
 router.use('/swap', swapRoutes);
 router.use('/withdrawal', withdrawalRoutes);
 router.use('/subscription', subscriptionRoutes);

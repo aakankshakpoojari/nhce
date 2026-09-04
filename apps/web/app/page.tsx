@@ -257,26 +257,81 @@ export default function LandingPage() {
           </span>
         </Link>
 
-        {/* Minimal Navigation */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted">
-          <Link href="/bounties" className="hover:text-moss transition-colors">
-            Freelancer Portal
-          </Link>
-          <Link href="/client" className="hover:text-moss transition-colors">
-            Client Workspace
-          </Link>
-          <a href="#how-it-works" className="hover:text-moss transition-colors">
-            Mechanics
-          </a>
-          <a href="#contrast" className="hover:text-moss transition-colors">
-            Why W3HIRE
-          </a>
-          <a href="#features" className="hover:text-moss transition-colors">
-            Features
-          </a>
-          <a href="#faq" className="hover:text-moss transition-colors">
-            FAQ
-          </a>
+        {/* Dynamic Navigation */}
+        <nav className="hidden md:flex items-center gap-6 text-xs font-semibold uppercase tracking-wider text-muted">
+          {!user ? (
+            <>
+              <Link href="/" className="hover:text-moss transition-colors">
+                Home
+              </Link>
+              <Link href="/bounties" className="hover:text-moss transition-colors">
+                Marketplace
+              </Link>
+              <a href="#how-it-works" className="hover:text-moss transition-colors">
+                Mechanics
+              </a>
+              <a href="#contrast" className="hover:text-moss transition-colors">
+                Why W3HIRE
+              </a>
+              <a href="#features" className="hover:text-moss transition-colors">
+                Features
+              </a>
+              <a href="#faq" className="hover:text-moss transition-colors">
+                FAQ
+              </a>
+            </>
+          ) : user.role === "CLIENT" ? (
+            <>
+              <Link href="/" className="hover:text-moss transition-colors">
+                Home
+              </Link>
+              <Link href="/client/jobs/new" className="hover:text-moss transition-colors">
+                Post Work
+              </Link>
+              <Link href="/client/jobs" className="hover:text-moss transition-colors">
+                My Jobs
+              </Link>
+              <Link href="/projects" className="hover:text-moss transition-colors">
+                My Projects
+              </Link>
+              <Link href="/client/freelancers" className="hover:text-moss transition-colors">
+                Browse Talent
+              </Link>
+              <Link href="/client/escrows" className="hover:text-moss transition-colors">
+                Escrow Vaults
+              </Link>
+              <Link href="/swap" className="hover:text-moss transition-colors">
+                Swap
+              </Link>
+              <Link href="/wallet" className="hover:text-moss transition-colors">
+                Wallet
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/" className="hover:text-moss transition-colors">
+                Home
+              </Link>
+              <Link href="/bounties" className="hover:text-moss transition-colors">
+                Marketplace
+              </Link>
+              <Link href="/applications" className="hover:text-moss transition-colors">
+                My Applications
+              </Link>
+              <Link href="/projects" className="hover:text-moss transition-colors">
+                My Projects
+              </Link>
+              <Link href="/messages" className="hover:text-moss transition-colors">
+                Messages
+              </Link>
+              <Link href="/swap" className="hover:text-moss transition-colors">
+                Swap
+              </Link>
+              <Link href="/wallet" className="hover:text-moss transition-colors">
+                Wallet
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Auth Controls */}
@@ -613,28 +668,30 @@ export default function LandingPage() {
 
 
         {/* SECTION 4: THE MECHANICS (3-STEP SMART CONTRACTS) */}
-        <MechanicsScrollShowcase
-          steps={[
-            {
-              id: "step-1",
-              eyebrow: "STEP 1",
-              title: "Client Locks Funds",
-              description: "The project budget is deposited into a secure, neutral digital escrow before any work begins. This ensures 100% payment guarantee for the freelancer, eliminating default risk.",
-            },
-            {
-              id: "step-2",
-              eyebrow: "STEP 2",
-              title: "Talent Delivers",
-              description: "The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed. Code, design, or audit deliverables are submitted on-chain or off-chain.",
-            },
-            {
-              id: "step-3",
-              eyebrow: "STEP 3",
-              title: "Protocol Pays Instantly",
-              description: "Upon client approval or successful dispute resolution, the smart contract automatically releases funds directly to the freelancer's wallet. Zero banking delays.",
-            },
-          ]}
-        />
+        <section id="how-it-works" className="w-full">
+          <MechanicsScrollShowcase
+            steps={[
+              {
+                id: "step-1",
+                eyebrow: "STEP 1",
+                title: "Client Locks Funds",
+                description: "The project budget is deposited into a secure, neutral digital escrow before any work begins. This ensures 100% payment guarantee for the freelancer, eliminating default risk.",
+              },
+              {
+                id: "step-2",
+                eyebrow: "STEP 2",
+                title: "Talent Delivers",
+                description: "The freelancer completes the agreed-upon milestones with absolute certainty that the money is guaranteed. Code, design, or audit deliverables are submitted on-chain or off-chain.",
+              },
+              {
+                id: "step-3",
+                eyebrow: "STEP 3",
+                title: "Protocol Pays Instantly",
+                description: "Upon client approval or successful dispute resolution, the smart contract automatically releases funds directly to the freelancer's wallet. Zero banking delays.",
+              },
+            ]}
+          />
+        </section>
 
         {/* SECTION 5: KEY PLATFORM FEATURES (LUSION CARD GRID) */}
         <section id="features" className="w-full max-w-6xl mx-auto px-6 py-8 border-t border-surface-border">
