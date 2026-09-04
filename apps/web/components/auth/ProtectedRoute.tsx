@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthModal from "@/components/auth/AuthModal";
 import { Lock, Loader2, ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react";
@@ -18,16 +19,26 @@ export default function ProtectedRoute({
   requiredRole,
 }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // If role requirement is specified
   const effectiveRoles = allowedRoles || (requiredRole ? [requiredRole] : undefined);
+
+  // Post-signup onboarding gate. Only real backend sessions carry this flag —
+  // synthetic admin / offline-mock sessions leave it undefined and skip the gate.
+  const needsOnboarding =
+    !!user && user.role !== "ADMIN" && user.onboardingCompleted === false;
 
   useEffect(() => {
     if (!isLoading && !user) {
       setIsAuthModalOpen(true);
     }
   }, [isLoading, user]);
+
+  useEffect(() => {
+    if (needsOnboarding) router.replace("/onboarding");
+  }, [needsOnboarding, router]);
 
   if (isLoading) {
     return (
@@ -92,6 +103,21 @@ export default function ProtectedRoute({
           initialMode="signin"
         />
       </>
+    );
+  }
+
+  // Authenticated but onboarding isn't finished — the effect above is
+  // redirecting to /onboarding; don't flash protected content.
+  if (needsOnboarding) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center space-y-4">
+        <div className="w-14 h-14 rounded-2xl bg-surface border border-surface-border flex items-center justify-center text-moss shadow-inner animate-pulse">
+          <Loader2 className="w-7 h-7 animate-spin" />
+        </div>
+        <div className="text-xs font-mono uppercase tracking-wider text-muted">
+          Redirecting to onboarding…
+        </div>
+      </div>
     );
   }
 

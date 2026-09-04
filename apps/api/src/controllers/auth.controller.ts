@@ -1,7 +1,8 @@
 /**
  * @file auth.controller.ts
  * @description Authentication & Profile Management Controller.
- * Handles Email/Password registration, Login, JWT verification, and Profile management.
+ * Handles Email/Password registration, Login, JWT verification, Profile
+ * management, and the post-signup onboarding (profile setup) flow.
  */
 
 import { Request, Response } from 'express';
@@ -13,7 +14,7 @@ import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 
 /**
  * Fields safe to return to the client.
- * NEVER includes passwordHash or siweNonce, and avoids leaking internal columns.
+ * NEVER includes passwordHash or siweNonce.
  */
 function toPublicProfile(user: any) {
   return {
@@ -28,14 +29,62 @@ function toPublicProfile(user: any) {
     portfolioLinks: user.portfolioLinks,
     jobsPostedCount: user.jobsPostedCount,
     jobsAppliedCount: user.jobsAppliedCount,
-    createdAt: user.createdAt
+    onboardingCompleted: user.onboardingCompleted,
+    createdAt: user.createdAt,
   };
+}
+
+/**
+ * Auth-response user shape (matches GET /api/auth/me and the login/signup
+ * payloads). Never leaks secret columns.
+ */
+function toAuthUser(user: any) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    walletAddress: user.walletAddress,
+    bio: user.bio,
+    location: user.location,
+    rating: user.rating,
+    portfolioLinks: user.portfolioLinks,
+    isPro: user.isPro,
+    jobsPostedCount: user.jobsPostedCount,
+    jobsAppliedCount: user.jobsAppliedCount,
+    onboardingCompleted: user.onboardingCompleted,
+  };
+}
+
+/** Editable profile fields shared by PUT /profile and onboarding completion. */
+function sanitizeProfileInput(body: any): Record<string, unknown> {
+  const data: Record<string, unknown> = {};
+  if (body?.name !== undefined) {
+    data.name = String(body.name).trim() || null;
+  }
+  if (body?.bio !== undefined) {
+    data.bio = String(body.bio).trim().slice(0, 1000) || null;
+  }
+  if (body?.location !== undefined) {
+    data.location = String(body.location).trim().slice(0, 120) || null;
+  }
+  if (body?.walletAddress !== undefined) {
+    const trimmed = String(body.walletAddress).trim();
+    if (trimmed) data.walletAddress = trimmed;
+  }
+  if (body?.portfolioLinks !== undefined && Array.isArray(body.portfolioLinks)) {
+    data.portfolioLinks = body.portfolioLinks
+      .map((link: any) => String(link).trim())
+      .filter((link: string) => link.length > 0)
+      .slice(0, 50);
+  }
+  return data;
 }
 
 export class AuthController {
   /**
    * POST /api/auth/signup
-   * Register new user with email, password, name, and role
+   * Register new user with email, password, name, and role.
    */
   public async signup(req: Request, res: Response): Promise<void> {
     try {
@@ -48,9 +97,8 @@ export class AuthController {
 
       const normalizedEmail = email.toLowerCase().trim();
 
-      // Check if user already exists
       const existingUser = await prisma.user.findUnique({
-        where: { email: normalizedEmail }
+        where: { email: normalizedEmail },
       });
 
       if (existingUser) {
@@ -58,12 +106,10 @@ export class AuthController {
         return;
       }
 
-      // Hash password
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
 
-      // Create new user
-      const userRole = role === 'CLIENT' ? 'CLIENT' : 'FREELANCER';
+      const userRole = role === 'CLIENT' ? 'CLIENT' : role === 'JUROR' ? 'JUROR' : 'FREELANCER';
       const user = await prisma.user.create({
         data: {
           email: normalizedEmail,
@@ -74,40 +120,21 @@ export class AuthController {
           isPro: false,
           jobsPostedCount: 0,
           jobsAppliedCount: 0,
-          portfolioLinks: []
-        }
+          portfolioLinks: [],
+        },
       });
 
-      // Generate JWT Token
       const tokenPayload = {
         id: user.id,
         sub: user.id,
         email: user.email,
         role: user.role,
-        isPro: user.isPro
+        isPro: user.isPro,
       };
 
-      const token = jwt.sign(tokenPayload, env.JWT_SECRET, {
-        expiresIn: '7d'
-      });
+      const token = jwt.sign(tokenPayload, env.JWT_SECRET, { expiresIn: '7d' });
 
-      res.status(201).json({
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          walletAddress: user.walletAddress,
-          bio: user.bio,
-          location: user.location,
-          rating: user.rating,
-          portfolioLinks: user.portfolioLinks,
-          isPro: user.isPro,
-          jobsPostedCount: user.jobsPostedCount,
-          jobsAppliedCount: user.jobsAppliedCount
-        }
-      });
+      res.status(201).json({ token, user: toAuthUser(user) });
     } catch (error: any) {
       console.error('Signup error:', error);
       res.status(500).json({ error: 'Registration failed', message: error.message });
@@ -116,7 +143,8 @@ export class AuthController {
 
   /**
    * POST /api/auth/login
-   * Authenticate user with email and password
+   * Authenticate user with email and password. The returned
+   * `user.onboardingCompleted` flag lets the client route to onboarding.
    */
   public async login(req: Request, res: Response): Promise<void> {
     try {
@@ -130,7 +158,7 @@ export class AuthController {
       const normalizedEmail = email.toLowerCase().trim();
 
       const user = await prisma.user.findUnique({
-        where: { email: normalizedEmail }
+        where: { email: normalizedEmail },
       });
 
       if (!user || !user.passwordHash) {
@@ -144,36 +172,17 @@ export class AuthController {
         return;
       }
 
-      // Generate JWT Token
       const tokenPayload = {
         id: user.id,
         sub: user.id,
         email: user.email,
         role: user.role,
-        isPro: user.isPro
+        isPro: user.isPro,
       };
 
-      const token = jwt.sign(tokenPayload, env.JWT_SECRET, {
-        expiresIn: '7d'
-      });
+      const token = jwt.sign(tokenPayload, env.JWT_SECRET, { expiresIn: '7d' });
 
-      res.json({
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          walletAddress: user.walletAddress,
-          bio: user.bio,
-          location: user.location,
-          rating: user.rating,
-          portfolioLinks: user.portfolioLinks,
-          isPro: user.isPro,
-          jobsPostedCount: user.jobsPostedCount,
-          jobsAppliedCount: user.jobsAppliedCount
-        }
-      });
+      res.json({ token, user: toAuthUser(user) });
     } catch (error: any) {
       console.error('Login error:', error);
       res.status(500).json({ error: 'Login failed', message: error.message });
@@ -182,7 +191,7 @@ export class AuthController {
 
   /**
    * GET /api/auth/me
-   * Fetch authenticated user's profile from database
+   * Fetch authenticated user's profile from database.
    */
   public async getMe(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -191,31 +200,45 @@ export class AuthController {
         return;
       }
 
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id }
-      });
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
       if (!user) {
         res.status(404).json({ error: 'User profile not found' });
         return;
       }
 
-      res.json({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        walletAddress: user.walletAddress,
-        bio: user.bio,
-        location: user.location,
-        rating: user.rating,
-        portfolioLinks: user.portfolioLinks,
-        isPro: user.isPro,
-        jobsPostedCount: user.jobsPostedCount,
-        jobsAppliedCount: user.jobsAppliedCount
-      });
+      res.json(toAuthUser(user));
     } catch (error: any) {
       res.status(500).json({ error: 'Failed to fetch profile', message: error.message });
+    }
+  }
+
+  /**
+   * POST /api/auth/onboarding/complete
+   * Auth required. Persists the final onboarding payload (same editable fields
+   * as PUT /profile) and flips onboardingCompleted. Safe to call repeatedly.
+   */
+  public async completeOnboarding(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const current = await prisma.user.findUnique({ where: { id: req.user.id } });
+      if (!current) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      const data = sanitizeProfileInput(req.body);
+      data.onboardingCompleted = true;
+
+      const updated = await prisma.user.update({ where: { id: req.user.id }, data });
+      res.json({ message: 'Onboarding complete', user: toAuthUser(updated) });
+    } catch (error: any) {
+      console.error('completeOnboarding error:', error);
+      res.status(500).json({ error: 'Failed to complete onboarding', message: error.message });
     }
   }
 
@@ -237,9 +260,7 @@ export class AuthController {
         return;
       }
 
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id }
-      });
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
       if (!user) {
         res.status(404).json({ error: 'User profile not found' });
@@ -281,7 +302,7 @@ export class AuthController {
       if (holder && holder.id !== req.user.id) {
         res.status(409).json({
           error: 'Wallet already linked',
-          message: 'This wallet address is already linked to another account'
+          message: 'This wallet address is already linked to another account',
         });
         return;
       }
@@ -289,14 +310,14 @@ export class AuthController {
       try {
         const user = await prisma.user.update({
           where: { id: req.user.id },
-          data: { walletAddress }
+          data: { walletAddress },
         });
-        res.json(this.serializeUser(user));
+        res.json(toAuthUser(user));
       } catch (err: any) {
         if (err?.code === 'P2002') {
           res.status(409).json({
             error: 'Wallet already linked',
-            message: 'This wallet address is already linked to another account'
+            message: 'This wallet address is already linked to another account',
           });
           return;
         }
@@ -320,43 +341,21 @@ export class AuthController {
 
       const user = await prisma.user.update({
         where: { id: req.user.id },
-        data: { walletAddress: null }
+        data: { walletAddress: null },
       });
 
-      res.json(this.serializeUser(user));
+      res.json(toAuthUser(user));
     } catch (error: any) {
       res.status(500).json({ error: 'Failed to disconnect wallet', message: error.message });
     }
   }
 
-  /** Public-facing user shape, matching GET /api/auth/me. */
-  private serializeUser(user: {
-    id: string; email: string | null; name: string | null; role: string;
-    walletAddress: string | null; bio: string | null; location: string | null;
-    rating: number; portfolioLinks: string[]; isPro: boolean;
-    jobsPostedCount: number; jobsAppliedCount: number;
-  }) {
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      walletAddress: user.walletAddress,
-      bio: user.bio,
-      location: user.location,
-      rating: user.rating,
-      portfolioLinks: user.portfolioLinks,
-      isPro: user.isPro,
-      jobsPostedCount: user.jobsPostedCount,
-      jobsAppliedCount: user.jobsAppliedCount
-    };
-  }
-
   /**
    * PUT /api/auth/profile
    * Update profile fields the user is allowed to edit: name, bio, location,
-   * walletAddress, and portfolioLinks. Role/rating/counters are never editable
-   * through this endpoint (role identity is assigned at signup).
+   * walletAddress, and portfolioLinks. Role/rating/counters and onboarding
+   * state are never editable through this endpoint. Used both by the profile
+   * page and for per-step saves during onboarding.
    */
   public async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -365,37 +364,11 @@ export class AuthController {
         return;
       }
 
-      const { name, bio, location, walletAddress, portfolioLinks } = req.body;
-
-      const data: any = {};
-      if (name !== undefined) {
-        const trimmed = String(name).trim();
-        data.name = trimmed || null;
-      }
-      if (bio !== undefined) {
-        const trimmed = String(bio).trim();
-        data.bio = trimmed || null;
-      }
-      if (location !== undefined) {
-        const trimmed = String(location).trim();
-        data.location = trimmed || null;
-      }
-      if (walletAddress !== undefined) {
-        const trimmed = String(walletAddress).trim();
-        if (trimmed) data.walletAddress = trimmed;
-      }
-      if (portfolioLinks !== undefined) {
-        if (Array.isArray(portfolioLinks)) {
-          data.portfolioLinks = portfolioLinks
-            .map((link: any) => String(link).trim())
-            .filter((link: string) => link.length > 0)
-            .slice(0, 50);
-        }
-      }
+      const data = sanitizeProfileInput(req.body);
 
       const updatedUser = await prisma.user.update({
         where: { id: req.user.id },
-        data
+        data,
       });
 
       res.json({ message: 'Profile updated successfully', user: toPublicProfile(updatedUser) });

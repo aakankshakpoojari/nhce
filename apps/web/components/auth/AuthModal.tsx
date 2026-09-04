@@ -30,16 +30,36 @@ export default function AuthModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Sync mode/role to the props when the caller changes them — React's
+  // "adjusting state during render on prop change" pattern (no effect needed).
+  const [prevInitialMode, setPrevInitialMode] = useState(initialMode);
+  if (initialMode !== prevInitialMode) {
+    setPrevInitialMode(initialMode);
+    setMode(initialMode);
+  }
+  const [prevInitialRole, setPrevInitialRole] = useState(initialRole);
+  if (initialRole !== prevInitialRole) {
+    setPrevInitialRole(initialRole);
+    setRole(initialRole);
+  }
+
   if (!isOpen) return null;
 
-  const handleRoleRedirect = (userRole?: "CLIENT" | "FREELANCER" | "ADMIN") => {
-    if (userRole === "ADMIN") {
+  // Route to the right place after auth: users who haven't finished profile
+  // setup go to onboarding, everyone else to their role dashboard.
+  const routeAfterAuth = (u: {
+    role?: "CLIENT" | "FREELANCER" | "JUROR" | "ADMIN";
+    onboardingCompleted?: boolean;
+  }) => {
+    if (u.role === "ADMIN") {
       router.push("/admin");
-    } else if (userRole === "CLIENT") {
-      router.push("/client");
-    } else {
-      router.push("/bounties");
+      return;
     }
+    if (u.onboardingCompleted === false) {
+      router.push("/onboarding");
+      return;
+    }
+    router.push(u.role === "CLIENT" ? "/client" : "/bounties");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,7 +73,7 @@ export default function AuthModal({
       if (res.success && res.user) {
         if (onSuccess) onSuccess();
         onClose();
-        handleRoleRedirect(res.user.role);
+        routeAfterAuth(res.user);
       } else {
         setError(res.error || "Failed to sign in.");
       }
@@ -63,7 +83,7 @@ export default function AuthModal({
       if (res.success && res.user) {
         if (onSuccess) onSuccess();
         onClose();
-        handleRoleRedirect(res.user.role);
+        routeAfterAuth(res.user);
       } else {
         setError(res.error || "Failed to create account.");
       }
