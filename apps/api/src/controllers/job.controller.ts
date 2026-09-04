@@ -43,6 +43,13 @@ export class JobController {
         return;
       }
 
+      // Enforce wallet connection for job posting
+      const clientUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+      if (!clientUser?.walletAddress) {
+        res.status(400).json({ error: 'Wallet Connection Required: You must connect your Web3 wallet to your account before posting a job.' });
+        return;
+      }
+
       const { title, description, budget, tokenSymbol, skills, deadline, milestones } = req.body;
       let { status } = req.body;
 
