@@ -63,17 +63,20 @@ export default function WalletDashboard() {
 
   // Fetch Web3 Account & ETH Balance
   const fetchWeb3Balance = useCallback(async () => {
+    if (!user?.walletAddress) {
+      setActiveAddress(null);
+      setBalance(null);
+      return;
+    }
+
     if (typeof window === "undefined" || !window.ethereum) {
-      if (user?.walletAddress) {
-        setActiveAddress(user.walletAddress);
-      }
+      setActiveAddress(user.walletAddress);
       return;
     }
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum as any);
-      const accounts = await provider.listAccounts();
-      const currentAddr = accounts.length > 0 ? accounts[0].address : user?.walletAddress || null;
+      const currentAddr = user.walletAddress;
       setActiveAddress(currentAddr);
 
       if (currentAddr) {
@@ -86,6 +89,7 @@ export default function WalletDashboard() {
       }
     } catch (err) {
       console.error("Failed to read ETH balance:", err);
+      setActiveAddress(user.walletAddress || null);
     }
   }, [user?.walletAddress]);
 
@@ -237,7 +241,11 @@ export default function WalletDashboard() {
           {activeAddress ? (
             <div className="flex items-center gap-2">
               <button
-                onClick={disconnectWallet}
+                onClick={async () => {
+                  setActiveAddress(null);
+                  setBalance(null);
+                  await disconnectWallet();
+                }}
                 className="px-4 py-2.5 rounded-xl bg-background border border-surface-border hover:border-red-500/40 text-xs font-mono text-muted hover:text-red-400 transition"
               >
                 Disconnect Wallet
